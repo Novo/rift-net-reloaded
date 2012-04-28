@@ -1,0 +1,76 @@
+<?xml version='1.0' encoding='utf-8'?>
+<XMLConfigFile xmlns:xsd='http://www.w3.org/2001/XMLSchema' xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance'>
+
+---Rift.NET Reloaded Emulator Configuration File---
+
+
+----------------------------------------------------------------------
+Realm Server Connection Settings
+- RSPort = xxx; Default: 9100
+- RSHost = xxx; Default: 127.0.0.1
+----------------------------------------------------------------------
+<RSHost>127.0.0.1</RSHost>
+<RSPort>9100</RSPort>
+<RealmName>Alpha Test Realm</RealmName>
+
+
+----------------------------------------------------------------------
+MiddleMan Server Connection Settings
+- MMPort = xxx; Default: 9090
+- MMHost = xxx; Default: 127.0.0.1
+----------------------------------------------------------------------
+<MMHost>127.0.0.1</MMHost>
+<MMPort>9090</MMPort>
+
+
+----------------------------------------------------------------------
+World Server Connection Settings
+- WSHost = 127.0.0.1
+- WSPort = 8086
+----------------------------------------------------------------------
+<WSHost>127.0.0.1</WSHost>
+<WSPort>9100</WSPort>
+
+
+----------------------------------------------------------------------
+World Server Misc Settings
+- ServerLimit = The maximum number of players allowed on the server
+- SaveTimer = The time between character saves
+----------------------------------------------------------------------
+<ServerLimit>1</ServerLimit>
+<SaveTimer>90000</SaveTimer>
+
+
+----------------------------------------------------------------------
+- LogType - The place were the server will display
+- Your choices: COLORCONSOLE, FILE, CONSOLE
+----------------------------------------------------------------------
+<LogType>COLORCONSOLE</LogType>
+
+
+----------------------------------------------------------------------
+---Level of Logging to use (default is NETWORK)---
+----------------------------------------------------------------------
+- Messages with importance below this log level will not be logged
+-      NETWORK                 -Network code debugging
+-      DEBUG                   -Packets processing
+-      INFORMATION             -User information
+-      USER                    -User actions
+-      SUCCESS                 -Normal operation
+-      WARNING                 -Warning
+-      FAILED                  -Processing Error
+-      CRITICAL                -Application Error
+----------------------------------------------------------------------
+<LogLevel>NETWORK</LogLevel>
+
+
+----------------------------------------------------------------------
+---Additional configuration for selected LogType---
+----------------------------------------------------------------------
+-      COLORCONSOLE        -""
+-      CONSOLE             -""
+-      FILE                -"myfile" -> myfile-yyyy-MM-dd.log
+----------------------------------------------------------------------
+<LogConfig>myfile</LogConfig>
+
+</XMLConfigFile>
