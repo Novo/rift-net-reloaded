@@ -2,6 +2,19 @@
 
     Class GlobalConstants
 
+#Region "Account.Enums"
+
+        Public Enum AccessLevel As Byte
+            Trial = 0
+            Player = 1
+            GameMaster = 2
+            Admin = 3
+            Developer = 4
+        End Enum
+
+#End Region
+
+
 #Region "Player.Enums"
 
         Public Enum Genders As Byte

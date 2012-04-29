@@ -24,7 +24,7 @@ Public Module Main
 
         Console.ForegroundColor = System.ConsoleColor.White
         Console.WriteLine(CType([Assembly].GetExecutingAssembly().GetCustomAttributes(GetType(System.Reflection.AssemblyTitleAttribute), False)(0), AssemblyTitleAttribute).Title)
-        Console.Write("version {0}", [Assembly].GetExecutingAssembly().GetName().Version)
+        Console.Write("Version {0}", [Assembly].GetExecutingAssembly().GetName().Version)
         Console.WriteLine()
 
         Console.ForegroundColor = System.ConsoleColor.Gray
@@ -33,10 +33,12 @@ Public Module Main
         Console.WriteLine("Setting Process Priority to HIGH... [done]")
         Console.WriteLine()
 
+
         'Load Configuration File
         LoadConfigFile()
 
         CreateDefaultDatabases()
+
 
         'Start Realm Server
         RS = New RealmServerClass
@@ -50,8 +52,6 @@ Public Module Main
         WS = New WorldServerClass
         WS.Start()
 
-        'Intialize Realm Packet Handler
-        'IntializeRealmPacketHandlers()
 
         'Intialize Word Packet Handler
         IntializeWorldPacketHandlers()
@@ -63,6 +63,9 @@ Public Module Main
         Console.WriteLine("Used Memory: {0}", Format(GC.GetTotalMemory(False), "### ### ##0 bytes"))
         Console.WriteLine("")
 
+        'Log Test Output
+        Log.PrintDiagnosticTest()
+
         'Add Console Input Commands
         AddConsoleCommand()
     End Sub
@@ -72,28 +75,79 @@ Public Module Main
         Dim tmp As String = "", CommandList() As String, cmds() As String
         Dim cmd() As String = {}
         Dim varList As Integer
+
         While Not _flagStopListen
             Try
                 Console.Write("Rift>")
                 tmp = Console.ReadLine()
                 CommandList = tmp.Split(";")
 
-                For varList = LBound(CommandList) To UBound(CommandList)
+                For varList = LBound(CommandList) To UBound(CommandList) 'accept more than one command in one row, seperated with ";"
                     cmds = Split(CommandList(varList), " ", 5) 'command + 4 parameters
                     If CommandList(varList).Length > 0 Then
 
-
                         Select Case cmds(0).ToLower
+
                             Case "create"
+                                If cmds.Length > 1 Then
+
+                                    Select Case cmds(1).ToLower
+                                        Case "account"
+                                            If cmds.Length > 3 Then
+                                                Console.WriteLine("Account " & cmds(2) & " created.")
+                                            Else
+                                                Console.WriteLine("'create' commands are: create account [username] [password]")
+                                            End If
+
+                                        Case "realm"
+                                            If cmds.Length > 2 Then
+
+                                                Dim SQLconnect As New SQLite.SQLiteConnection()
+                                                Dim SQLcommand As SQLite.SQLiteCommand
+
+                                                SQLconnect.ConnectionString = "Data Source=database\realmDB.s3db; Version=3"
+                                                SQLconnect.Open()
+
+                                                SQLcommand = SQLconnect.CreateCommand
+
+                                                SQLcommand.CommandText = "insert into realmlist (realm_name,gm_only) VALUES ('" & cmds(2) & "','0')"
+                                                SQLcommand.ExecuteNonQuery()
+
+                                                Console.WriteLine("Realm " & cmds(2) & " created.")
+                                            Else
+                                                Console.WriteLine("'create' commands are: create realm [realmname]")
+                                            End If
+
+                                        Case Else
+                                            Console.WriteLine("'create' commands are: create account [username] [password]")
+                                            Console.WriteLine("'create' commands are: create realm [realmname]")
+                                    End Select
+
+                                Else
+                                    Console.WriteLine("'create' commands are: create account [username] [password]")
+                                    Console.WriteLine("'create' commands are: create realm [realmname]")
+                                End If
 
 
                             Case "quit", "shutdown", "off", "kill", "exit", "/quit", "/shutdown", "/off", "/kill", "/exit"
                                 Console.WriteLine("Server shutting down...")
                                 _flagStopListen = True
+                                RS._flagStopListen = True
+                                MS._flagStopListen = True
+                                WS._flagStopListen = True
+                                RS.DisposeRealm()
+                                MS.DisposeMiddleMan()
+                                WS.DisposeWorld()
+                                'ToDo: kick current connections
+
                             Case "gccollect"
                                 GC.Collect()
+
+
                             Case "info", "/info"
                                 Console.WriteLine("Used memory: {0}", Format(GC.GetTotalMemory(False), "### ### ##0 bytes"))
+
+
                             Case "help", "/help"
                                 Console.ForegroundColor = System.ConsoleColor.Blue
                                 Console.WriteLine("Command list:")
@@ -106,6 +160,8 @@ Public Module Main
                                 Console.WriteLine("'info' or '/info' - Brings up a context menu showing server information (such as memory used).")
                                 Console.WriteLine("")
                                 Console.WriteLine("'quit' or 'shutdown' or 'off' or 'kill' or 'exit' - Shutsdown 'WorldServer'.")
+
+
                             Case Else
                                 Console.ForegroundColor = System.ConsoleColor.DarkRed
                                 Console.WriteLine("Error! Cannot find specified command. Please type 'help' for information.")
@@ -113,7 +169,7 @@ Public Module Main
                         End Select
 
 
-                    End If
+                    End If 'of CommandList(varList).Length > 0 Then
                 Next
 
             Catch ex As Exception
@@ -152,12 +208,12 @@ Public Module Main
             'SQLcommand.CommandText = "insert into accounts (Fname,Uname,PWord) VALUES ('Admin','Admin','admin')"
             'SQLcommand.ExecuteNonQuery()
 
-            SQLcommand.CommandText = "CREATE TABLE IF NOT EXISTS realmlist (realm_id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, realm_name VARCHAR(32) NOT NULL, realm_host VARCHAR(15) NOT NULL, realm_port INTEGER NOT NULL, gm_only BOOLEAN NOT NULL);"
+            SQLcommand.CommandText = "CREATE TABLE IF NOT EXISTS realmlist (realm_id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, realm_name VARCHAR(32) NOT NULL, gm_only BOOLEAN NOT NULL);"
             SQLcommand.ExecuteNonQuery()
 
             Console.Write(".")
 
-            'SQLcommand.CommandText = "insert into realmlist (Date,Comments) VALUES ('25/12/2009','Merry Xmas all')"
+            'SQLcommand.CommandText = "insert into realmlist (realm_name,gm_only) VALUES ('Alpha Test Realm','0')"
             'SQLcommand.ExecuteNonQuery()
 
             SQLcommand.Dispose()
@@ -166,23 +222,26 @@ Public Module Main
             Console.WriteLine(". [done]")
 
 
+            'Dim SQLconnect As New SQLite.SQLiteConnection()
+            'Dim SQLcommand As SQLite.SQLiteCommand
+
+            SQLconnect.ConnectionString = "Data Source=database\realmDB.s3db; Version=3"
+            SQLconnect.Open()
+            SQLcommand = SQLconnect.CreateCommand
+            SQLcommand.CommandText = "SELECT realm_name FROM realmlist where realm_id='1' "
+            Dim SQLreader As SQLiteDataReader = SQLcommand.ExecuteReader()
 
 
+            While SQLreader.Read()
+                If SQLreader(0).ToString <> "" Then Config.RealmName = SQLreader(0).ToString
+                Console.Write(String.Format("realm_name= {0}", SQLreader(0)))
+                'Console.Write(String.Format("realm_id= {0}, realm_name= {1}, gm_only= {2}", SQLreader(0), SQLreader(1), SQLreader(2)))
+                Console.WriteLine("")
+            End While
 
-            'Dim con As New MySqlConnection
-            'Dim cmd As New MySqlCommand
+            SQLcommand.Dispose()
+            SQLconnect.Close()
 
-            'con.ConnectionString = "Data Source=;database=;Uid=;Pwd="
-
-            'cmd.Connection = con
-            'con.Open()
-
-            'cmd.CommandText = "UPDATE Kundendaten Set Anrede = '" & BoxAnrede.Text & "' and Vorname = '" & BoxVorname.Text & "' and Nachname = '" & BoxNachname.Text & "' And Zusatz = '" & BoxZusatz.Text & "' And Straße = '" & BoxStraße.Text & "' And Hausnummer = '" & BoxHausnummer.Text & "' And Postleitzahl = '" & BoxPostleitzahl.Text & "' And Wohnort = '" & BoxWohnort.Text & "' And Telefonnummer = '" & BoxTelefon.Text & "' And Fax = '" & BoxFax.Text & "' And Mobil = '" & BoxMobil.Text & "' And Emailadresse = '" & BoxEmail.Text & "' And Website = '" & BoxWebsite.Text & "' And Notiz = '" & BoxNotiz.Text & "' where Kundennummer = '" & SearchBoxKundennummer.Text & "'"
-            'cmd.ExecuteNonQuery()
-
-            'MsgBox("Die Kundendaten wurden erfolgreich geändert!", vbOKOnly, "Ändern")
-
-            'con.Close()
 
 
         Catch e As Exception
@@ -198,8 +257,8 @@ Public Module Main
 
     Public Class XMLConfigFile
         <XmlElement(ElementName:="LogType")> Public LogType As String = "COLORCONSOLE"
-        <XmlElement(ElementName:="LogLevel")> Public LogLevel As BaseWriter.LogType = BaseWriter.LogType.NETWORK
-        <XmlElement(ElementName:="LogConfig")> Public LogConfig As String = ""
+        <XmlElement(ElementName:="LogLevel")> Public LogLevel As BaseWriter.LogType = BaseWriter.LogType.FAILED
+        <XmlElement(ElementName:="LogConfig")> Public LogConfig As String = "test.log"
 
         <XmlElement(ElementName:="RSPort")> Public RSPort As Int32 = 9100
         <XmlElement(ElementName:="RSHost")> Public RSHost As String = "127.0.0.1"
@@ -255,11 +314,8 @@ Public Module Main
 
             Console.WriteLine(". [done]")
 
-            'load other settings like port etc.
-            'Console.WriteLine(Config.ServerLimit)
 
-
-            'DONE: Creating logger
+            'Creating logger
             BaseWriter.CreateLog(Config.LogType, Config.LogConfig, Log)
             Log.LogLevel = Config.LogLevel
 

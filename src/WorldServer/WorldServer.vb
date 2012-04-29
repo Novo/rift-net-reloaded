@@ -15,7 +15,7 @@ Public Module WS_Main
 
         Public Character As CharacterObject = Nothing
 
-        Private _flagStopListen As Boolean = False
+        Public _flagStopListen As Boolean = False
         Private Socket As Socket = Nothing
         Public WSIP As Net.IPAddress = Net.IPAddress.Parse("0.0.0.0")
         Public WSPort As Int32 = 8086

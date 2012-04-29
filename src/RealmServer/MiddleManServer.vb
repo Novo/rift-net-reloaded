@@ -8,7 +8,7 @@ Public Module MS_Main
     Class MiddleManServerClass
         Implements IDisposable
 
-        Private _flagStopListen As Boolean = False
+        Public _flagStopListen As Boolean = False
         Private Socket As Socket = Nothing
         Private IP As Net.IPAddress = Net.IPAddress.Parse("0.0.0.0")
         Private MMPort As Int32 = Config.MMPort

@@ -1,13 +1,5 @@
 ﻿Public Module WS_Handlers_Char
 
-    Public Enum AccessLevel As Byte
-        Trial = 0
-        Player = 1
-        GameMaster = 2
-        Admin = 3
-        Developer = 4
-    End Enum
-
     Class CharacterObject
         Implements IDisposable
 
@@ -21,7 +13,7 @@
         Public PositionY As Single
         Public PositionZ As Single
 
-        Public Access As AccessLevel
+        Public Access As GlobalConstants.AccessLevel
         Public Name As String
         Public Level As Integer
         Public Race As GlobalConstants.Races
