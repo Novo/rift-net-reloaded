@@ -126,7 +126,6 @@ Public Module Main
 
 #Region "Global.Database"
 
-
     Public Sub CreateDefaultDatabases()
         Try
 
@@ -191,14 +190,12 @@ Public Module Main
         End Try
     End Sub
 
-
 #End Region
-
-
 
 
 #Region "Global.Config"
     Public Config As XMLConfigFile
+
     Public Class XMLConfigFile
         <XmlElement(ElementName:="LogType")> Public LogType As String = "COLORCONSOLE"
         <XmlElement(ElementName:="LogLevel")> Public LogLevel As BaseWriter.LogType = BaseWriter.LogType.NETWORK
@@ -270,7 +267,6 @@ Public Module Main
             Console.WriteLine(e.ToString)
         End Try
     End Sub
-
 
 #End Region
 

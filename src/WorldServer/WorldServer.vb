@@ -14,8 +14,8 @@ Public Module WS_Main
 
         Private _flagStopListen As Boolean = False
         Private Socket As Socket = Nothing
-        Private IP As Net.IPAddress = Net.IPAddress.Parse("0.0.0.0")
-        Private Port As Int32 = 8086
+        Private WSIP As Net.IPAddress = Net.IPAddress.Parse("0.0.0.0")
+        Private WSPort As Int32 = 8086
         Private lstHostWorld As Net.IPAddress = Net.IPAddress.Parse("127.0.0.1")
         Private ConnectionWorld As TcpListener
 
@@ -24,7 +24,7 @@ Public Module WS_Main
             Console.WriteLine("[{0}] World Server Starting...", Format(TimeOfDay, "hh:mm:ss"))
             Dim lstHostWorld As Net.IPAddress = Net.IPAddress.Parse("127.0.0.1")
             Try
-                ConnectionWorld = New TcpListener(lstHostWorld, Port)
+                ConnectionWorld = New TcpListener(lstHostWorld, WSPort)
                 ConnectionWorld.Start()
 
                 Dim WSListenThread As Thread
@@ -32,7 +32,7 @@ Public Module WS_Main
                 WSListenThread.Name = "World Server Listening"
                 WSListenThread.Start()
 
-                Console.WriteLine("[{0}] World Server Listening on {1} on port {2}", Format(TimeOfDay, "hh:mm:ss"), lstHostWorld, Port)
+                Console.WriteLine("[{0}] World Server Listening on {1} on port {2}", Format(TimeOfDay, "hh:mm:ss"), lstHostWorld, WSPort)
             Catch e As Exception
                 Console.WriteLine()
                 Console.ForegroundColor = System.ConsoleColor.Red
@@ -57,14 +57,14 @@ Public Module WS_Main
 
 
         Public Sub ProcessWorld()
-            IP = CType(Socket.RemoteEndPoint, IPEndPoint).Address
-            Port = CType(Socket.RemoteEndPoint, IPEndPoint).Port
+            WSIP = CType(Socket.RemoteEndPoint, IPEndPoint).Address
+            WSPort = CType(Socket.RemoteEndPoint, IPEndPoint).Port
 
             Dim Buffer() As Byte
             Dim bytes As Integer
 
             Console.ForegroundColor = System.ConsoleColor.DarkGray
-            Console.WriteLine("[{0}] New incoming World connection from [{1}:{2}]", Format(TimeOfDay, "hh:mm:ss"), IP, Port)
+            Console.WriteLine("[{0}] New incoming World connection from [{1}:{2}]", Format(TimeOfDay, "hh:mm:ss"), WSIP, WSPort)
             Console.ForegroundColor = System.ConsoleColor.Gray
 
 
@@ -95,7 +95,7 @@ Public Module WS_Main
 
 
             Console.ForegroundColor = System.ConsoleColor.DarkGray
-            Console.WriteLine("[{0}] World Connection from [{1}:{2}] closed", Format(TimeOfDay, "hh:mm:ss"), IP, Port)
+            Console.WriteLine("[{0}] World Connection from [{1}:{2}] closed", Format(TimeOfDay, "hh:mm:ss"), WSIP, WSPort)
             Console.ForegroundColor = System.ConsoleColor.Gray
 
             Me.DisposeWorld()
@@ -108,17 +108,39 @@ Public Module WS_Main
                 Try
                     Dim buffer As Byte() = packet.ReadDataToSend()
 
-                    Dim i As Integer = Socket.Send(buffer, 0, buffer.Length, SocketFlags.None)
+                    'Send Data sync:
+                    Dim bytesSent As Integer = 0
+                    'bytesSent = Socket.Send(buffer, 0, buffer.Length, SocketFlags.None)
+                    'Console.WriteLine("[{0}:{1}] World Data sent {2} bytes, opcode={3}", IP, Port, i, packet.Opcode)
 
-                    Console.WriteLine("[{0}:{1}] World Data sent, result code={2}, opcode={3}", IP, Port, i, packet.Opcode)
+                    'Send Data async
+                    Socket.BeginSend(buffer, 0, buffer.Length, SocketFlags.None, New AsyncCallback(AddressOf AsyncSendWorldClientCallback), Socket)
+
 
                     Dim PacketLogger As New PacketLog
                     PacketLogger.DumpPacket(buffer, ">>")
 
+
                 Catch Err As Exception
-                    Console.WriteLine("World Connection from [{0}:{1}] cause error {3}{4}", IP, Port, Err.ToString, vbNewLine)
+                    Console.WriteLine("World Connection from [{0}:{1}] cause error {3}{4}", WSIP, WSPort, Err.ToString, vbNewLine)
                 End Try
             End SyncLock
+        End Sub
+
+        Public Sub AsyncSendWorldClientCallback(ByVal result As IAsyncResult)
+
+            Try
+                Dim socket As Socket = TryCast(result.AsyncState, Socket)
+                Dim bytesSent As Integer = 0
+                bytesSent = socket.EndSend(result)
+
+                'Console.WriteLine("[{0}:{1}] World Data sent {2} bytes, opcode={3}", WSIP, WSPort, bytesSent, packet.Opcode)
+                Console.WriteLine("[{0}:{1}] World Data sent {2} bytes", WSIP, WSPort, bytesSent)
+
+            Catch socketException As SocketException
+                Console.WriteLine("World Connection from [{0}:{1}] cause error {3}{4}", WSIP, WSPort, socketException.Message.ToString, vbNewLine)
+            End Try
+
         End Sub
 
 
@@ -133,12 +155,13 @@ Public Module WS_Main
                     Console.WriteLine("Received unknown OpCode: {0}, Length: {1}", PacketBuffer.Opcode, PacketBuffer.Size)
                 End If
 
+
                 Dim PacketLogger As New PacketLog
                 PacketLogger.DumpPacket(data, "<<")
 
 
             Catch Err As Exception
-                Console.WriteLine("World Connection from [{0}:{1}] caused an error {2}{3}", IP, Port, Err.ToString, vbNewLine)
+                Console.WriteLine("World Connection from [{0}:{1}] caused an error {2}{3}", WSIP, WSPort, Err.ToString, vbNewLine)
                 Console.WriteLine("Opcode Handler {2}:{3} caused an error:{1}{0}", Err.Message, vbNewLine, PacketBuffer.Opcode, CType(PacketBuffer.Opcode, OpCodes))
                 'Me.Delete()
             End Try
@@ -150,7 +173,7 @@ Public Module WS_Main
 
         Public Sub DisposeWorld() Implements System.IDisposable.Dispose
             Console.ForegroundColor = System.ConsoleColor.DarkGray
-            Console.WriteLine("[{0}] World Connection from [{1}:{2}] deleted", Format(TimeOfDay, "hh:mm:ss"), IP, Port)
+            Console.WriteLine("[{0}] World Connection from [{1}:{2}] deleted", Format(TimeOfDay, "hh:mm:ss"), WSIP, WSPort)
             Console.ForegroundColor = System.ConsoleColor.Gray
         End Sub
 

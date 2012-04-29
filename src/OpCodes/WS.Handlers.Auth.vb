@@ -1,6 +1,38 @@
 ﻿Public Module WS_Handlers_Auth
 
 
+
+    Public Sub On_CMSG_PLAYER_LOGIN(ByRef packet As PacketReader, ByRef Client As WorldServerClass)
+
+        Console.WriteLine("[{0}] << CMSG_PLAYER_LOGIN", Format(TimeOfDay, "hh:mm:ss"))
+        Console.WriteLine("ToDo: Send smsg_update_object")
+
+        'ToDO:
+        'Load Char Data
+        'SendData SMSG_IGNORE_LIST
+        'SendData SMSG_MESSAGECHAT
+        'SendData SMSG_BINDPOINTUPDATE
+        'SendData SMSG_LEARNED_SPELL
+        'SendData SMSG_TUTORIAL_FLAGS
+        'SendData SMSG_INITIAL_SPELLS
+        'SendData SMSG_ACTION_BUTTONS
+        'SendData SMSG_INITIALIZE_FACTIONS
+        'SendData SMSG_UPDATE_OBJECT(BuildClientA9(Index, aSession(Index).GetGUID))
+
+    End Sub
+
+
+    Public Sub On_CMSG_CHAR_DELETE(ByRef packet As PacketReader, ByRef Client As WorldServerClass)
+
+        Console.WriteLine("[{0}] << CMSG_CHAR_DELETE", Format(TimeOfDay, "hh:mm:ss"))
+        Console.WriteLine("ToDo: Delete Character and send SMSG_CHAR_ENUM(BuildCharEnum(Index))")
+
+        'ToDo:
+        'Add BuildCharEnum Function
+
+    End Sub
+
+
     Public Sub On_CMSG_CHAR_CREATE(ByRef packet As PacketReader, ByRef Client As WorldServerClass)
 
         Console.WriteLine("[{0}] << CMSG_CHAR_CREATE", Format(TimeOfDay, "hh:mm:ss"))
@@ -20,13 +52,13 @@
 
         Console.WriteLine("[{0}] << CMSG_CHAR_ENUM", Format(TimeOfDay, "hh:mm:ss"))
 
+        'Empty Char List
         'Dim writer As New PacketWriter(OpCodes.SMSG_CHAR_ENUM, 1)
         'writer.WriteUInt8(0)
         'Client.SendWorldClient(writer)
 
 
-
-
+        'DEBUG: Test Character
         Dim writer As New PacketWriter(OpCodes.SMSG_CHAR_ENUM, 14 + 45 + 100)
         writer.WriteUInt8(1)
 
