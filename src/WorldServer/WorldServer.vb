@@ -9,13 +9,16 @@ Public Module WS_Main
     Public PacketHandlers As New Hashtable
     Delegate Sub HandlePacket(ByRef Packet As PacketReader, ByRef Client As WorldServerClass)
 
+
     Class WorldServerClass
         Implements IDisposable
 
+        Public Character As CharacterObject = Nothing
+
         Private _flagStopListen As Boolean = False
         Private Socket As Socket = Nothing
-        Private WSIP As Net.IPAddress = Net.IPAddress.Parse("0.0.0.0")
-        Private WSPort As Int32 = 8086
+        Public WSIP As Net.IPAddress = Net.IPAddress.Parse("0.0.0.0")
+        Public WSPort As Int32 = 8086
         Private lstHostWorld As Net.IPAddress = Net.IPAddress.Parse("127.0.0.1")
         Private ConnectionWorld As TcpListener
 

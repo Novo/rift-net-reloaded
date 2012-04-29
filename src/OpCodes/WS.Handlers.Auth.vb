@@ -4,10 +4,22 @@
 
     Public Sub On_CMSG_PLAYER_LOGIN(ByRef packet As PacketReader, ByRef Client As WorldServerClass)
 
-        Console.WriteLine("[{0}] << CMSG_PLAYER_LOGIN", Format(TimeOfDay, "hh:mm:ss"))
+        Console.WriteLine("[{0}] << CMSG_PLAYER_LOGIN", Format(TimeOfDay, "hh:mm:ss"), Client.WSIP, Client.WSPort)
         Console.WriteLine("ToDo: Send smsg_update_object")
 
-        'ToDO:
+        Dim PlayerGUID As ULong = 0
+        PlayerGUID = packet.ReadUInt64()       'uint64 GUID
+
+        Console.WriteLine("[{0}] Player GUID: {1} try to enter world ...", Format(TimeOfDay, "hh:mm:ss"), PlayerGUID, Client.WSIP, Client.WSPort)
+
+        'Send World Server down
+        Dim writer As New PacketWriter(OpCodes.SMSG_CHARACTER_LOGIN_FAILED, 1)
+        writer.WriteInt8(AuthLoginCodes.CHAR_LOGIN_NO_WORLD)
+        Client.SendWorldClient(writer)
+        Console.WriteLine("[{0}] Unable to login: WORLD SERVER DOWN", Format(TimeOfDay, "hh:mm:ss"), Client.WSIP, Client.WSPort)
+
+
+        'ToDo:
         'Load Char Data
         'SendData SMSG_IGNORE_LIST
         'SendData SMSG_MESSAGECHAT
@@ -23,8 +35,7 @@
 
 
     Public Sub On_CMSG_CHAR_DELETE(ByRef packet As PacketReader, ByRef Client As WorldServerClass)
-
-        Console.WriteLine("[{0}] << CMSG_CHAR_DELETE", Format(TimeOfDay, "hh:mm:ss"))
+        Console.WriteLine("[{0}] << CMSG_CHAR_DELETE", Format(TimeOfDay, "hh:mm:ss"), Client.WSIP, Client.WSPort)
         Console.WriteLine("ToDo: Delete Character and send SMSG_CHAR_ENUM(BuildCharEnum(Index))")
 
         'ToDo:
@@ -35,7 +46,9 @@
 
     Public Sub On_CMSG_CHAR_CREATE(ByRef packet As PacketReader, ByRef Client As WorldServerClass)
 
-        Console.WriteLine("[{0}] << CMSG_CHAR_CREATE", Format(TimeOfDay, "hh:mm:ss"))
+        Console.WriteLine("[{0}] << CMSG_CHAR_CREATE", Format(TimeOfDay, "hh:mm:ss"), Client.WSIP, Client.WSPort)
+
+        Console.WriteLine("ToDo")
 
         Dim writer As New PacketWriter(OpCodes.SMSG_CHAR_CREATE, 1)
         'SendData SMSG_CHAR_CREATE(40) 'Success
@@ -50,7 +63,7 @@
 
     Public Sub On_CMSG_CHAR_ENUM(ByRef packet As PacketReader, ByRef Client As WorldServerClass)
 
-        Console.WriteLine("[{0}] << CMSG_CHAR_ENUM", Format(TimeOfDay, "hh:mm:ss"))
+        Console.WriteLine("[{0}] << CMSG_CHAR_ENUM", Format(TimeOfDay, "hh:mm:ss"), Client.WSIP, Client.WSPort)
 
         'Empty Char List
         'Dim writer As New PacketWriter(OpCodes.SMSG_CHAR_ENUM, 1)
@@ -102,7 +115,7 @@
 
     Public Sub On_CMSG_AUTH_SESSION(ByRef packet As PacketReader, ByRef Client As WorldServerClass)
 
-        Console.WriteLine("[{0}] << CMSG_AUTH_SESSION", Format(TimeOfDay, "hh:mm:ss"))
+        Console.WriteLine("[{0}] << CMSG_AUTH_SESSION", Format(TimeOfDay, "hh:mm:ss"), Client.WSIP, Client.WSPort)
 
         Dim clientVersion As Integer = packet.ReadInt32
         Dim clientSesionID As Integer = packet.ReadInt32
@@ -121,7 +134,7 @@
             Dim response As New PacketWriter(OpCodes.SMSG_AUTH_RESPONSE, 1)
             response.WriteInt8(AuthResponseCodes.WRONG_CLIENT) '6 - Wrong Client Version
             Client.SendWorldClient(response)
-            'Console.WriteLine("Successfully sent: SMSG_AUTH_RESPONSE")
+            Console.WriteLine("Successfully sent: SMSG_AUTH_RESPONSE")
             Exit Sub
         End If
 
@@ -178,7 +191,7 @@
 
     Public Sub On_CMSG_PING(ByRef packet As PacketReader, ByRef Client As WorldServerClass)
 
-        Console.WriteLine("[{0}] << CMSG_PING", Format(TimeOfDay, "hh:mm:ss"))
+        Console.WriteLine("[{0}] << CMSG_PING", Format(TimeOfDay, "hh:mm:ss"), Client.WSIP, Client.WSPort)
 
         Dim writer As New PacketWriter(OpCodes.SMSG_PONG, 4)
         writer.WriteUInt32(packet.ReadUInt32)

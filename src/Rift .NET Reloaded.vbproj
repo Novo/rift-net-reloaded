@@ -110,9 +110,11 @@
     <Compile Include="Logging\ErrorLog.vb" />
     <Compile Include="Logging\FileWriter.vb" />
     <Compile Include="Logging\PacketLog.vb" />
+    <Compile Include="OpCodes\WS.Handlers.Char.vb" />
     <Compile Include="PacketHandler\Global.PacketWriter.vb" />
     <Compile Include="OpCodes\WS.Handlers.Auth.vb" />
     <Compile Include="OpCodes\WS.Handlers.vb" />
+    <Compile Include="WorldServer\Global.Constants.vb" />
   </ItemGroup>
   <ItemGroup>
     <BootstrapperPackage Include="Microsoft.Net.Client.3.5">
