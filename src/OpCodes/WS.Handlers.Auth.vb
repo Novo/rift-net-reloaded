@@ -1,22 +1,33 @@
 ﻿Public Module WS_Handlers_Auth
 
 
-
     Public Sub On_CMSG_PLAYER_LOGIN(ByRef packet As PacketReader, ByRef Client As WorldServerClass)
 
         Console.WriteLine("[{0}] << CMSG_PLAYER_LOGIN", Format(TimeOfDay, "hh:mm:ss"), Client.WSIP, Client.WSPort)
         Console.WriteLine("ToDo: Send smsg_update_object")
 
         Dim PlayerGUID As ULong = 0
-        PlayerGUID = packet.ReadUInt64()       'uint64 GUID
+        PlayerGUID = packet.ReadUInt64() 'uint64 GUID
 
         Console.WriteLine("[{0}] Player GUID: {1} try to enter world ...", Format(TimeOfDay, "hh:mm:ss"), PlayerGUID, Client.WSIP, Client.WSPort)
 
-        'Send World Server down
+
+        'Temp: Send World Server down
         Dim writer As New PacketWriter(OpCodes.SMSG_CHARACTER_LOGIN_FAILED, 1)
         writer.WriteInt8(AuthLoginCodes.CHAR_LOGIN_NO_WORLD)
         Client.SendWorldClient(writer)
         Console.WriteLine("[{0}] Unable to login: WORLD SERVER DOWN", Format(TimeOfDay, "hh:mm:ss"), Client.WSIP, Client.WSPort)
+        'Temp: Send World Server down
+
+
+        'Dim CharacterObject As New WS_Handlers_Char.CharacterObject(PlayerGUID, Client)
+
+        'Dim test As New PacketWriter(OpCodes.SMSG_UPDATE_OBJECT, 1)
+        'test.WriteString(CharacterObject.Build_SMSG_UPDATE_OBJECT(PlayerGUID))
+        'Client.SendWorldClient(test)
+
+        'Console.WriteLine("Successfully sent: SMSG_UPDATE_OBJECT")
+
 
 
         'ToDo:
@@ -38,9 +49,21 @@
         Console.WriteLine("[{0}] << CMSG_CHAR_DELETE", Format(TimeOfDay, "hh:mm:ss"), Client.WSIP, Client.WSPort)
         Console.WriteLine("ToDo: Delete Character and send SMSG_CHAR_ENUM(BuildCharEnum(Index))")
 
-        'ToDo:
-        'Add BuildCharEnum Function
+        Dim PlayerGUID As ULong = 0
+        Dim response As New PacketWriter(OpCodes.SMSG_CHAR_DELETE, 1)
 
+        Try
+            PlayerGUID = packet.ReadUInt64() 'uint64 GUID
+
+            'Do Database Stuff (delete char and stuff with GUID)
+
+            Console.WriteLine("[{0}] Player GUID: {1} deleted. ...", Format(TimeOfDay, "hh:mm:ss"), PlayerGUID, Client.WSIP, Client.WSPort)
+        Catch ex As Exception
+            Console.WriteLine("[{0}] Player GUID: {1} deletion FAILED!", Format(TimeOfDay, "hh:mm:ss"), PlayerGUID, Client.WSIP, Client.WSPort)
+        End Try
+
+        Client.SendWorldClient(response)
+    
     End Sub
 
 
@@ -48,65 +71,133 @@
 
         Console.WriteLine("[{0}] << CMSG_CHAR_CREATE", Format(TimeOfDay, "hh:mm:ss"), Client.WSIP, Client.WSPort)
 
-        Console.WriteLine("ToDo")
+        'ToDo:
+        'ask character Info and write to Database
+
 
         Dim writer As New PacketWriter(OpCodes.SMSG_CHAR_CREATE, 1)
-        'SendData SMSG_CHAR_CREATE(40) 'Success
-        'SendData(SMSG_CHAR_CREATE(43)) 'name already taken
-
-        writer.WriteUInt8(43)
+        writer.WriteUInt8(43) 'Name already taken (40 = Success)
         Client.SendWorldClient(writer)
 
         Console.WriteLine("Successfully sent: SMSG_CHAR_CREATE")
     End Sub
 
 
-    Public Sub On_CMSG_CHAR_ENUM(ByRef packet As PacketReader, ByRef Client As WorldServerClass)
-
-        Console.WriteLine("[{0}] << CMSG_CHAR_ENUM", Format(TimeOfDay, "hh:mm:ss"), Client.WSIP, Client.WSPort)
-
-        'Empty Char List
-        'Dim writer As New PacketWriter(OpCodes.SMSG_CHAR_ENUM, 1)
-        'writer.WriteUInt8(0)
-        'Client.SendWorldClient(writer)
-
+    Public Function BuildCharEnum(ByRef bNumChars As Byte, ByRef writer As PacketWriter) As PacketWriter
 
         'DEBUG: Test Character
-        Dim writer As New PacketWriter(OpCodes.SMSG_CHAR_ENUM, 14 + 45 + 100)
-        writer.WriteUInt8(1)
+        'writer.WriteUInt8(bNumChars) 'Number of Characters
 
-        writer.WriteUInt64(1)
+        writer.WriteUInt64(1) 'GUID
 
-        writer.WriteString("NoVo")
+        writer.WriteString("NoVo") 'Name
 
-        writer.WriteUInt8(1)
-        writer.WriteUInt8(1)
-        writer.WriteUInt8(0)
-        writer.WriteUInt8(1)
-        writer.WriteUInt8(1)
-        writer.WriteUInt8(1)
-        writer.WriteUInt8(1)
-        writer.WriteUInt8(1)
-        writer.WriteUInt8(1)
+        writer.WriteUInt8(1) 'Race
+        writer.WriteUInt8(1) 'Class
+        writer.WriteUInt8(0) 'Gender
+        writer.WriteUInt8(1) 'Skin
+        writer.WriteUInt8(1) 'Face
+        writer.WriteUInt8(1) 'HairStyle
+        writer.WriteUInt8(1) 'HairColor
+        writer.WriteUInt8(1) 'FacialHair
+        writer.WriteUInt8(1) 'Player Level
 
-        writer.WriteUInt32(0)
-        writer.WriteUInt32(0)
+        writer.WriteUInt32(0) 'ZoneID
+        writer.WriteUInt32(0) 'MapID
 
-        writer.WriteUInt32(0)
-        writer.WriteUInt32(0)
-        writer.WriteUInt32(0)
+        writer.WriteUInt32(0) 'CurX
+        writer.WriteUInt32(0) 'CurY
+        writer.WriteUInt32(0) 'CurZ
 
-        writer.WriteUInt32(0)
-        writer.WriteUInt32(0)
-        writer.WriteUInt32(0)
-        writer.WriteUInt32(0)
+        writer.WriteUInt32(0) 'GuildID
+        writer.WriteUInt32(0) 'PetDisp
+        writer.WriteUInt32(0) 'PetLevel
+        writer.WriteUInt32(0) 'PetFamID
 
-        For j As Integer = 0 To 19
+        For j As Integer = 1 To 20 'ToDo: items [uint32 - Display ID][byte - item type]
             writer.WriteUInt32(0)
             writer.WriteUInt8(0)
         Next
 
-        Client.SendWorldClient(writer)
+        bNumChars += 1
+
+        'Next Character
+
+        Return writer
+
+        ' -------------------------------
+
+        'Private Function BuildCharEnum(ByRef Index As Integer) As String
+        '    Dim strCharBuffer As String
+        '    Dim i As Integer
+        '    Dim bNumChars As Byte
+
+        '    Dim PlayerGUID As Double
+
+        '    Dim clsStringTokenizer As StringTokenizer
+        '    clsStringTokenizer = New StringTokenizer
+
+        '    bNumChars = 0
+
+        '    clsStringTokenizer.setText(GetConfig(aSession(Index).GetAccountFile, "Account", "Chars"), ",", False)
+
+        '    While clsStringTokenizer.hasMoreTokensEOT = False
+        '        PlayerGUID = Val(clsStringTokenizer.getNextToken)
+
+        '        strCharBuffer = strCharBuffer & DoubleToString(dblGUIDBuffer) & _
+        '                        GetConfig(GUIDFile, "GUIDs", Str(dblGUIDBuffer)) & NT & _
+        '                        Chr(Val(GetConfig(aSession(Index).GetAccountFile, PlayerGUID, "Race"))) & _
+        '                        Chr(Val(GetConfig(aSession(Index).GetAccountFile, PlayerGUID, "Class"))) & _
+        '                        Chr(Val(GetConfig(aSession(Index).GetAccountFile, PlayerGUID, "Gender"))) & _
+        '                        Chr(Val(GetConfig(aSession(Index).GetAccountFile, PlayerGUID, "Skin"))) & _
+        '                        Chr(Val(GetConfig(aSession(Index).GetAccountFile, PlayerGUID, "Face"))) & _
+        '                        Chr(Val(GetConfig(aSession(Index).GetAccountFile, PlayerGUID, "HairStyle"))) & _
+        '                        Chr(Val(GetConfig(aSession(Index).GetAccountFile, PlayerGUID, "HairColor"))) & _
+        '                        Chr(Val(GetConfig(aSession(Index).GetAccountFile, PlayerGUID, "FacialHair"))) & _
+        '                        Chr(Val(GetConfig(aSession(Index).GetAccountFile, PlayerGUID, "Level"))) & _
+        '                        LongToString(Val(GetConfig(aSession(Index).GetAccountFile, PlayerGUID, "ZoneID"))) & _
+        '                        LongToString(Val(GetConfig(aSession(Index).GetAccountFile, PlayerGUID, "MapID"))) & _
+        '                        FloatToString(Val(GetConfig(aSession(Index).GetAccountFile, PlayerGUID, "CurX"))) & _
+        '                        FloatToString(Val(GetConfig(aSession(Index).GetAccountFile, PlayerGUID, "CurY"))) & _
+        '                        FloatToString(Val(GetConfig(aSession(Index).GetAccountFile, PlayerGUID, "CurZ"))) & _
+        '                        FloatToString(Val(GetConfig(aSession(Index).GetAccountFile, PlayerGUID, "GuildID"))) & _
+        '                        FloatToString(Val(GetConfig(aSession(Index).GetAccountFile, PlayerGUID, "PetDisp"))) & _
+        '                        FloatToString(Val(GetConfig(aSession(Index).GetAccountFile, PlayerGUID, "PetLevel"))) & _
+        '                        FloatToString(Val(GetConfig(aSession(Index).GetAccountFile, PlayerGUID, "PetFamID")))
+        '        Dim j As Integer
+        '        For j = 1 To 20
+        '            strCharBuffer = strCharBuffer & Hex2ASCII("00 00 00 00 00")
+        '            DoEvents()
+        '        Next j
+        '        bNumChars = bNumChars + 1
+        '        DoEvents()
+        '    End While
+
+        '    BuildCharEnum = Chr(bNumChars) & strCharBuffer
+        'End Function
+
+    End Function
+
+
+    Public Sub On_CMSG_CHAR_ENUM(ByRef packet As PacketReader, ByRef Client As WorldServerClass)
+
+        Console.WriteLine("[{0}] << CMSG_CHAR_ENUM", Format(TimeOfDay, "hh:mm:ss"), Client.WSIP, Client.WSPort)
+
+        Dim bNumChars As Byte = 1
+        'Get Number of Chars from Database
+
+
+        If bNumChars > 0 Then
+            Dim writer As New PacketWriter(OpCodes.SMSG_CHAR_ENUM, 14 + 45 + 100) '159
+            writer.WriteUInt8(bNumChars) 'Number of Characters
+            Client.SendWorldClient(BuildCharEnum(bNumChars, writer))
+
+        Else
+            'Send Empty Char List
+            Dim response As New PacketWriter(OpCodes.SMSG_CHAR_ENUM, 1)
+            response.WriteUInt8(0)
+            Client.SendWorldClient(response)
+        End If
 
         Console.WriteLine("Successfully sent: SMSG_CHAR_ENUM")
     End Sub
