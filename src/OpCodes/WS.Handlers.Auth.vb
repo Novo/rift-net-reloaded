@@ -83,7 +83,7 @@
     End Sub
 
 
-    Public Function BuildCharEnum(ByRef bNumChars As Byte, ByRef writer As PacketWriter) As PacketWriter
+    Public Function BuildCharEnum(ByRef writer As PacketWriter) As PacketWriter
 
         'DEBUG: Test Character
         'writer.WriteUInt8(bNumChars) 'Number of Characters
@@ -119,63 +119,52 @@
             writer.WriteUInt8(0)
         Next
 
-        bNumChars += 1
 
         'Next Character
 
+
+
+
+
+        'DEBUG: Test Character
+        'writer.WriteUInt8(bNumChars) 'Number of Characters
+
+        writer.WriteUInt64(2) 'GUID
+
+        writer.WriteString("Fabi") 'Name
+
+        writer.WriteUInt8(1) 'Race
+        writer.WriteUInt8(1) 'Class
+        writer.WriteUInt8(0) 'Gender
+        writer.WriteUInt8(1) 'Skin
+        writer.WriteUInt8(1) 'Face
+        writer.WriteUInt8(1) 'HairStyle
+        writer.WriteUInt8(1) 'HairColor
+        writer.WriteUInt8(1) 'FacialHair
+        writer.WriteUInt8(1) 'Player Level
+
+        writer.WriteUInt32(0) 'ZoneID
+        writer.WriteUInt32(0) 'MapID
+
+        writer.WriteUInt32(0) 'CurX
+        writer.WriteUInt32(0) 'CurY
+        writer.WriteUInt32(0) 'CurZ
+
+        writer.WriteUInt32(0) 'GuildID
+        writer.WriteUInt32(0) 'PetDisp
+        writer.WriteUInt32(0) 'PetLevel
+        writer.WriteUInt32(0) 'PetFamID
+
+        For j As Integer = 1 To 20 'ToDo: items [uint32 - Display ID][byte - item type]
+            writer.WriteUInt32(0)
+            writer.WriteUInt8(0)
+        Next
+
+
+        'Next Character
+
+
         Return writer
-
-        ' -------------------------------
-
-        'Private Function BuildCharEnum(ByRef Index As Integer) As String
-        '    Dim strCharBuffer As String
-        '    Dim i As Integer
-        '    Dim bNumChars As Byte
-
-        '    Dim PlayerGUID As Double
-
-        '    Dim clsStringTokenizer As StringTokenizer
-        '    clsStringTokenizer = New StringTokenizer
-
-        '    bNumChars = 0
-
-        '    clsStringTokenizer.setText(GetConfig(aSession(Index).GetAccountFile, "Account", "Chars"), ",", False)
-
-        '    While clsStringTokenizer.hasMoreTokensEOT = False
-        '        PlayerGUID = Val(clsStringTokenizer.getNextToken)
-
-        '        strCharBuffer = strCharBuffer & DoubleToString(dblGUIDBuffer) & _
-        '                        GetConfig(GUIDFile, "GUIDs", Str(dblGUIDBuffer)) & NT & _
-        '                        Chr(Val(GetConfig(aSession(Index).GetAccountFile, PlayerGUID, "Race"))) & _
-        '                        Chr(Val(GetConfig(aSession(Index).GetAccountFile, PlayerGUID, "Class"))) & _
-        '                        Chr(Val(GetConfig(aSession(Index).GetAccountFile, PlayerGUID, "Gender"))) & _
-        '                        Chr(Val(GetConfig(aSession(Index).GetAccountFile, PlayerGUID, "Skin"))) & _
-        '                        Chr(Val(GetConfig(aSession(Index).GetAccountFile, PlayerGUID, "Face"))) & _
-        '                        Chr(Val(GetConfig(aSession(Index).GetAccountFile, PlayerGUID, "HairStyle"))) & _
-        '                        Chr(Val(GetConfig(aSession(Index).GetAccountFile, PlayerGUID, "HairColor"))) & _
-        '                        Chr(Val(GetConfig(aSession(Index).GetAccountFile, PlayerGUID, "FacialHair"))) & _
-        '                        Chr(Val(GetConfig(aSession(Index).GetAccountFile, PlayerGUID, "Level"))) & _
-        '                        LongToString(Val(GetConfig(aSession(Index).GetAccountFile, PlayerGUID, "ZoneID"))) & _
-        '                        LongToString(Val(GetConfig(aSession(Index).GetAccountFile, PlayerGUID, "MapID"))) & _
-        '                        FloatToString(Val(GetConfig(aSession(Index).GetAccountFile, PlayerGUID, "CurX"))) & _
-        '                        FloatToString(Val(GetConfig(aSession(Index).GetAccountFile, PlayerGUID, "CurY"))) & _
-        '                        FloatToString(Val(GetConfig(aSession(Index).GetAccountFile, PlayerGUID, "CurZ"))) & _
-        '                        FloatToString(Val(GetConfig(aSession(Index).GetAccountFile, PlayerGUID, "GuildID"))) & _
-        '                        FloatToString(Val(GetConfig(aSession(Index).GetAccountFile, PlayerGUID, "PetDisp"))) & _
-        '                        FloatToString(Val(GetConfig(aSession(Index).GetAccountFile, PlayerGUID, "PetLevel"))) & _
-        '                        FloatToString(Val(GetConfig(aSession(Index).GetAccountFile, PlayerGUID, "PetFamID")))
-        '        Dim j As Integer
-        '        For j = 1 To 20
-        '            strCharBuffer = strCharBuffer & Hex2ASCII("00 00 00 00 00")
-        '            DoEvents()
-        '        Next j
-        '        bNumChars = bNumChars + 1
-        '        DoEvents()
-        '    End While
-
-        '    BuildCharEnum = Chr(bNumChars) & strCharBuffer
-        'End Function
-
     End Function
 
 
@@ -183,14 +172,14 @@
 
         Console.WriteLine("[{0}] << CMSG_CHAR_ENUM", Format(TimeOfDay, "hh:mm:ss"), Client.WSIP, Client.WSPort)
 
-        Dim bNumChars As Byte = 1
+        Dim bNumChars As Byte = 2
         'Get Number of Chars from Database
 
-
         If bNumChars > 0 Then
-            Dim writer As New PacketWriter(OpCodes.SMSG_CHAR_ENUM, 14 + 45 + 100) '159
+            'Dim writer As New PacketWriter(OpCodes.SMSG_CHAR_ENUM, 159)
+            Dim writer As New PacketWriter(OpCodes.SMSG_CHAR_ENUM, 317) 'für 2 chars
             writer.WriteUInt8(bNumChars) 'Number of Characters
-            Client.SendWorldClient(BuildCharEnum(bNumChars, writer))
+            Client.SendWorldClient(BuildCharEnum(writer))
 
         Else
             'Send Empty Char List

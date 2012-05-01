@@ -24,18 +24,19 @@ Imports System.Text
             MyBase.New(New MemoryStream())
         End Sub
 
-    Public Sub New(ByVal opcode As OpCodes, ByVal length As Byte, Optional ByVal isWorldPacket As Boolean = True)
+    Public Sub New(ByVal opcode As OpCodes, ByVal length As UShort, Optional ByVal isWorldPacket As Boolean = True)
         MyBase.New(New MemoryStream())
-        Me.Opcode = Opcode
-        WritePacketHeader(Opcode, length, isWorldPacket)
+        Me.Opcode = opcode
+        WritePacketHeader(opcode, length, isWorldPacket)
     End Sub
 
-    Protected Sub WritePacketHeader(ByVal opcode As OpCodes, ByVal length As Byte, Optional ByVal isWorldPacket As Boolean = True)
+    Protected Sub WritePacketHeader(ByVal opcode As OpCodes, ByVal length As UShort, Optional ByVal isWorldPacket As Boolean = True)
         ' Packet header (0.5.3.3368): Size: 2 bytes + Cmd: 2 bytes
         ' Packet header after SMSG_AUTH_CHALLENGE (0.5.3.3368): Size: 2 bytes + Cmd: 4 bytes
-        WriteUInt8(0)
+
+        WriteUInt8(CByte(length \ &H100))
         If isWorldPacket Then
-            WriteUInt8(CByte(length + 4))
+            WriteUInt8(CByte(length Mod &H100 + 4))
         Else
             WriteUInt8(CByte(length + 2))
         End If
@@ -49,16 +50,17 @@ Imports System.Text
         End If
     End Sub
 
-        Public Function ReadDataToSend() As Byte()
-            Dim data As Byte() = New Byte(BaseStream.Length - 1) {}
-            Seek(0, SeekOrigin.Begin)
 
-            For i As Integer = 0 To BaseStream.Length - 1
-                data(i) = CByte(BaseStream.ReadByte())
-            Next
+    Public Function ReadDataToSend() As Byte()
+        Dim data As Byte() = New Byte(BaseStream.Length - 1) {}
+        Seek(0, SeekOrigin.Begin)
 
-            Return data
-        End Function
+        For i As Integer = 0 To BaseStream.Length - 1
+            data(i) = CByte(BaseStream.ReadByte())
+        Next
+
+        Return data
+    End Function
 
         Public Sub WriteInt8(ByVal data As SByte)
             MyBase.Write(data)
