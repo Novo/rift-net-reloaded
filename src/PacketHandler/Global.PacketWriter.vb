@@ -24,22 +24,18 @@ Imports System.Text
             MyBase.New(New MemoryStream())
         End Sub
 
-    Public Sub New(ByVal opcode As OpCodes, ByVal length As UShort, Optional ByVal isWorldPacket As Boolean = True)
+    Public Sub New(ByVal opcode As OpCodes, Optional ByVal isWorldPacket As Boolean = True)
         MyBase.New(New MemoryStream())
         Me.Opcode = opcode
-        WritePacketHeader(opcode, length, isWorldPacket)
+        WritePacketHeader(opcode, isWorldPacket)
     End Sub
 
-    Protected Sub WritePacketHeader(ByVal opcode As OpCodes, ByVal length As UShort, Optional ByVal isWorldPacket As Boolean = True)
+    Protected Sub WritePacketHeader(ByVal opcode As OpCodes, Optional ByVal isWorldPacket As Boolean = True)
         ' Packet header (0.5.3.3368): Size: 2 bytes + Cmd: 2 bytes
         ' Packet header after SMSG_AUTH_CHALLENGE (0.5.3.3368): Size: 2 bytes + Cmd: 4 bytes
 
-        WriteUInt8(CByte(length \ &H100))
-        If isWorldPacket Then
-            WriteUInt8(CByte(length Mod &H100 + 4))
-        Else
-            WriteUInt8(CByte(length + 2))
-        End If
+        WriteUInt8(0)
+        WriteUInt8(0)
 
         WriteUInt8(CByte(CUInt(opcode) Mod &H100))
         WriteUInt8(CByte(CUInt(opcode) \ &H100))
@@ -51,13 +47,19 @@ Imports System.Text
     End Sub
 
 
-    Public Function ReadDataToSend() As Byte()
+    Public Function ReadDataToSend(Optional ByVal isAuthPacket As Boolean = False) As Byte()
         Dim data As Byte() = New Byte(BaseStream.Length - 1) {}
         Seek(0, SeekOrigin.Begin)
 
         For i As Integer = 0 To BaseStream.Length - 1
             data(i) = CByte(BaseStream.ReadByte())
         Next
+
+        Size = CUShort(data.Length - 2)
+        If Not isAuthPacket Then
+            data(0) = CByte((data.Length - 2) / &H100)
+            data(1) = CByte((data.Length - 2) Mod &H100)
+        End If
 
         Return data
     End Function

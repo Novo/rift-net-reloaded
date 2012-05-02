@@ -9,8 +9,8 @@ Public Module RS_Main
         Implements IDisposable
 
         Public _flagStopListen As Boolean = False
-        Private Socket As Socket = Nothing
-        Private IP As Net.IPAddress = Net.IPAddress.Parse("0.0.0.0")
+        Private RealmSocket As Socket = Nothing
+        Private RSIP As Net.IPAddress = Net.IPAddress.Parse("0.0.0.0")
         Private RSPort As Int32 = Config.RSPort
         Private lstHostRealm As Net.IPAddress = Net.IPAddress.Parse(Config.RSHost)
         Private ConnectionRealm As TcpListener
@@ -41,7 +41,7 @@ Public Module RS_Main
                 Thread.Sleep(100)
                 If ConnectionRealm.Pending() Then
                     Dim RealmClient As New RealmServerClass
-                    RealmClient.Socket = ConnectionRealm.AcceptSocket
+                    RealmClient.RealmSocket = ConnectionRealm.AcceptSocket
 
                     Dim NewThread As New Thread(AddressOf RealmClient.ProcessRealmClient)
                     NewThread.Start()
@@ -51,58 +51,92 @@ Public Module RS_Main
 
 
         Public Sub ProcessRealmClient()
-            IP = CType(Socket.RemoteEndPoint, IPEndPoint).Address
-            RSPort = CType(Socket.RemoteEndPoint, IPEndPoint).Port
+            RSIP = CType(RealmSocket.RemoteEndPoint, IPEndPoint).Address
+            RSPort = CType(RealmSocket.RemoteEndPoint, IPEndPoint).Port
 
             Console.ForegroundColor = System.ConsoleColor.DarkGray
-            Console.WriteLine("[{0}] Incoming Realm connection from [{1}:{2}]", Format(TimeOfDay, "hh:mm:ss"), IP, RSPort)
+            Console.WriteLine("[{0}] Incoming Realm connection from [{1}:{2}]", Format(TimeOfDay, "hh:mm:ss"), RSIP, RSPort)
             Console.ForegroundColor = System.ConsoleColor.Gray
 
+            Dim realmWriter As New PacketWriter()
+            realmWriter.WriteUInt8(1)
+            realmWriter.WriteBytes(System.Text.Encoding.ASCII.GetBytes("|cFF00FFFF" & Config.RealmName))
+            realmWriter.WriteUInt8(0)
+            realmWriter.WriteBytes(System.Text.Encoding.ASCII.GetBytes(Config.MMHost & ":" & Config.MMPort))
+            realmWriter.WriteUInt8(0)
+            realmWriter.WriteUInt32(0)
 
-            Dim packet As System.IO.MemoryStream = New System.IO.MemoryStream()
-            Dim writer As System.IO.BinaryWriter = New System.IO.BinaryWriter(packet)
-            writer.Write(CByte(1))
-            writer.Write(System.Text.Encoding.ASCII.GetBytes("|cFF00FFFF" & Config.RealmName))
-            writer.Write(CByte(0))
-            writer.Write(System.Text.Encoding.ASCII.GetBytes(Config.MMHost & ":" & Config.MMPort))
-            writer.Write(CByte(0))
-            writer.Write(CInt(0))
-            SendRealmClient(packet.ToArray())
-            Socket.Close()
-
-
-            Console.ForegroundColor = System.ConsoleColor.DarkGray
-            Console.WriteLine("[{0}] Realm Connection from [{1}:{2}] closed", Format(TimeOfDay, "hh:mm:ss"), IP, RSPort)
-            Console.ForegroundColor = System.ConsoleColor.Gray
-
-            Me.DisposeRealm()
+            SendRealmClient(realmWriter)
         End Sub
 
 
-        Public Sub SendRealmClient(ByVal data() As Byte)
-            Try
-                Dim i As Integer = Socket.Send(data, 0, data.Length, SocketFlags.None)
+        Public Sub SendRealmClient(ByVal packet As PacketWriter)
 
-            Catch Err As Exception
-                Console.ForegroundColor = System.ConsoleColor.Red
-                Console.WriteLine("[{0}] Realm Connection from [{1}:{2}] do not exist - ERROR!!!", Format(TimeOfDay, "hh:mm:ss"), IP, RSPort)
+            If packet Is Nothing Then Throw New ApplicationException("Realm Packet doesn't contain data!")
+            SyncLock Me
+                Try
+                    Dim buffer As Byte() = packet.ReadDataToSend(True)
+
+                    'Send Data sync:
+                    Dim bytesSent As Integer = 0
+                    'bytesSent = Socket.Send(buffer, 0, buffer.Length, SocketFlags.None)
+                    'Console.WriteLine("[{0}:{1}] Realm Data sent {2} bytes, opcode={3}", IP, Port, i, packet.Opcode)
+
+                    'Send Data async
+                    RealmSocket.BeginSend(buffer, 0, buffer.Length, SocketFlags.None, New AsyncCallback(AddressOf AsyncSendRealmClientCallback), RealmSocket)
+
+
+                    Dim PacketLogger As New PacketLog
+                    PacketLogger.DumpPacket(buffer, ">>")
+
+
+                Catch Err As Exception
+                    Console.ForegroundColor = System.ConsoleColor.Red
+                    Console.WriteLine("[{0}] Realm Connection from [{1}:{2}] do not exist - ERROR!!!", Format(TimeOfDay, "hh:mm:ss"), RSIP, RSPort)
+                    Console.ForegroundColor = System.ConsoleColor.Gray
+                    RealmSocket.Close()
+                End Try
+            End SyncLock
+
+        End Sub
+
+
+        Public Sub AsyncSendRealmClientCallback(ByVal result As IAsyncResult)
+
+            Try
+                Dim RealmSocket As Socket = TryCast(result.AsyncState, Socket)
+                Dim bytesSent As Integer = 0
+                bytesSent = RealmSocket.EndSend(result)
+
+                'Console.WriteLine("[{0}:{1}] Realm Data sent {2} bytes, opcode={3}", RSIP, RSPort, bytesSent, packet.Opcode)
+                Console.WriteLine("[{0}:{1}] Realm Data sent {2} bytes", RSIP, RSPort, bytesSent)
+
+                RealmSocket.Close()
+
+                Console.ForegroundColor = System.ConsoleColor.DarkGray
+                Console.WriteLine("[{0}] Realm Connection from [{1}:{2}] closed", Format(TimeOfDay, "hh:mm:ss"), RSIP, RSPort)
                 Console.ForegroundColor = System.ConsoleColor.Gray
-                Socket.Close()
+
+                Me.DisposeRealm()
+
+            Catch socketException As SocketException
+                Console.WriteLine("Realm Connection from [{0}:{1}] cause error {3}{4}", RSIP, RSPort, socketException.Message.ToString, vbNewLine)
             End Try
+
         End Sub
 
 
         Public Sub OnRealmData(ByVal data() As Byte)
             'not used in Alpha ...
             Console.ForegroundColor = System.ConsoleColor.Red
-            Console.WriteLine("[{0}] [{1}:{2}] Unknown Realm Opcode 0x{3}", Format(TimeOfDay, "hh:mm:ss"), IP, RSPort, data(0))
+            Console.WriteLine("[{0}] [{1}:{2}] Unknown Realm Opcode 0x{3}", Format(TimeOfDay, "hh:mm:ss"), RSIP, RSPort, data(0))
             Console.ForegroundColor = System.ConsoleColor.Gray
         End Sub
 
 
         Public Sub DisposeRealm() Implements System.IDisposable.Dispose
             Console.ForegroundColor = System.ConsoleColor.DarkGray
-            Console.WriteLine("[{0}] Realm Connection from [{1}:{2}] deleted", Format(TimeOfDay, "hh:mm:ss"), IP, RSPort)
+            Console.WriteLine("[{0}] Realm Connection from [{1}:{2}] deleted", Format(TimeOfDay, "hh:mm:ss"), RSIP, RSPort)
             Console.ForegroundColor = System.ConsoleColor.Gray
         End Sub
 

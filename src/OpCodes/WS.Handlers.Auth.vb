@@ -13,16 +13,16 @@
 
 
         'Temp: Send World Server down
-        Dim writer As New PacketWriter(OpCodes.SMSG_CHARACTER_LOGIN_FAILED, 1)
-        writer.WriteInt8(AuthLoginCodes.CHAR_LOGIN_NO_WORLD)
-        Client.SendWorldClient(writer)
+        Dim response As New PacketWriter(OpCodes.SMSG_CHARACTER_LOGIN_FAILED)
+        response.WriteInt8(AuthLoginCodes.CHAR_LOGIN_NO_WORLD)
+        Client.SendWorldClient(response)
         Console.WriteLine("[{0}] Unable to login: WORLD SERVER DOWN", Format(TimeOfDay, "hh:mm:ss"), Client.WSIP, Client.WSPort)
         'Temp: Send World Server down
 
 
         'Dim CharacterObject As New WS_Handlers_Char.CharacterObject(PlayerGUID, Client)
 
-        'Dim test As New PacketWriter(OpCodes.SMSG_UPDATE_OBJECT, 1)
+        'Dim test As New PacketWriter(OpCodes.SMSG_UPDATE_OBJECT)
         'test.WriteString(CharacterObject.Build_SMSG_UPDATE_OBJECT(PlayerGUID))
         'Client.SendWorldClient(test)
 
@@ -32,14 +32,6 @@
 
         'ToDo:
         'Load Char Data
-        'SendData SMSG_IGNORE_LIST
-        'SendData SMSG_MESSAGECHAT
-        'SendData SMSG_BINDPOINTUPDATE
-        'SendData SMSG_LEARNED_SPELL
-        'SendData SMSG_TUTORIAL_FLAGS
-        'SendData SMSG_INITIAL_SPELLS
-        'SendData SMSG_ACTION_BUTTONS
-        'SendData SMSG_INITIALIZE_FACTIONS
         'SendData SMSG_UPDATE_OBJECT(BuildClientA9(Index, aSession(Index).GetGUID))
 
     End Sub
@@ -50,7 +42,7 @@
         Console.WriteLine("ToDo: Delete Character and send SMSG_CHAR_ENUM(BuildCharEnum(Index))")
 
         Dim PlayerGUID As ULong = 0
-        Dim response As New PacketWriter(OpCodes.SMSG_CHAR_DELETE, 1)
+        Dim response As New PacketWriter(OpCodes.SMSG_CHAR_DELETE)
 
         Try
             PlayerGUID = packet.ReadUInt64() 'uint64 GUID
@@ -75,9 +67,9 @@
         'ask character Info and write to Database
 
 
-        Dim writer As New PacketWriter(OpCodes.SMSG_CHAR_CREATE, 1)
-        writer.WriteUInt8(43) 'Name already taken (40 = Success)
-        Client.SendWorldClient(writer)
+        Dim response As New PacketWriter(OpCodes.SMSG_CHAR_CREATE)
+        response.WriteUInt8(43) 'Name already taken (40 = Success)
+        Client.SendWorldClient(response)
 
         Console.WriteLine("Successfully sent: SMSG_CHAR_CREATE")
     End Sub
@@ -121,9 +113,6 @@
 
 
         'Next Character
-
-
-
 
 
         'DEBUG: Test Character
@@ -176,14 +165,13 @@
         'Get Number of Chars from Database
 
         If bNumChars > 0 Then
-            'Dim writer As New PacketWriter(OpCodes.SMSG_CHAR_ENUM, 159)
-            Dim writer As New PacketWriter(OpCodes.SMSG_CHAR_ENUM, 317) 'für 2 chars
-            writer.WriteUInt8(bNumChars) 'Number of Characters
-            Client.SendWorldClient(BuildCharEnum(writer))
+            Dim response As New PacketWriter(OpCodes.SMSG_CHAR_ENUM)
+            response.WriteUInt8(bNumChars) 'Number of Characters
+            Client.SendWorldClient(BuildCharEnum(response))
 
         Else
             'Send Empty Char List
-            Dim response As New PacketWriter(OpCodes.SMSG_CHAR_ENUM, 1)
+            Dim response As New PacketWriter(OpCodes.SMSG_CHAR_ENUM)
             response.WriteUInt8(0)
             Client.SendWorldClient(response)
         End If
@@ -207,20 +195,21 @@
         UserName = clientAccount
         Password = ""
 
+
+        Dim response As New PacketWriter(OpCodes.SMSG_AUTH_RESPONSE)
+
         ' If wrong Client Version, close all
         If Not clientVersion = 3368 Then 'HardCoded needed WoW Build
             Console.WriteLine("User: " & UserName & " has attempted to log in with wrong Client build " & clientVersion)
 
-            Dim response As New PacketWriter(OpCodes.SMSG_AUTH_RESPONSE, 1)
             response.WriteInt8(AuthResponseCodes.WRONG_CLIENT) '6 - Wrong Client Version
             Client.SendWorldClient(response)
             Console.WriteLine("Successfully sent: SMSG_AUTH_RESPONSE")
             Exit Sub
         End If
 
-        Dim writer As New PacketWriter(OpCodes.SMSG_AUTH_RESPONSE, 1)
-        writer.WriteInt8(AuthResponseCodes.AUTH_OK) '12 - Success
-        Client.SendWorldClient(writer)
+        response.WriteInt8(AuthResponseCodes.AUTH_OK) '12 - Success
+        Client.SendWorldClient(response)
 
         Console.WriteLine("Successfully sent: SMSG_AUTH_RESPONSE")
 
@@ -273,9 +262,9 @@
 
         Console.WriteLine("[{0}] << CMSG_PING", Format(TimeOfDay, "hh:mm:ss"), Client.WSIP, Client.WSPort)
 
-        Dim writer As New PacketWriter(OpCodes.SMSG_PONG, 4)
-        writer.WriteUInt32(packet.ReadUInt32)
-        Client.SendWorldClient(writer)
+        Dim response As New PacketWriter(OpCodes.SMSG_PONG)
+        response.WriteUInt32(packet.ReadUInt32)
+        Client.SendWorldClient(response)
 
         Console.WriteLine("Successfully sent: SMSG_PONG")
 

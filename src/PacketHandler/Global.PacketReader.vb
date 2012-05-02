@@ -5,6 +5,7 @@ Public Module Packets
 
     Public Class PacketReader
         Inherits BinaryReader
+
         Public Property Opcode() As OpCodes
             Get
                 Return m_Opcode
@@ -13,6 +14,7 @@ Public Module Packets
                 m_Opcode = Value
             End Set
         End Property
+
         Private m_Opcode As OpCodes
         Public Property Size() As UShort
             Get
@@ -22,6 +24,7 @@ Public Module Packets
                 m_Size = Value
             End Set
         End Property
+
         Private m_Size As UShort
 
         Public Sub New(ByVal data As Byte(), Optional ByVal worldPacket As Boolean = True)
@@ -95,16 +98,6 @@ Public Module Packets
             Array.Reverse(stringArray)
 
             Return Encoding.ASCII.GetString(stringArray)
-        End Function
-
-        Public Function ReadIPAddress() As String
-            Dim ip As Byte() = New Byte(3) {}
-
-            For i As Integer = 0 To 3
-                ip(i) = ReadUInt8()
-            Next
-
-            Return ip(0) & "." & ip(1) & "." & ip(2) & "." & ip(3)
         End Function
 
         Public Function ReadAccountName() As String

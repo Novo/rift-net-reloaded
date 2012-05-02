@@ -16,7 +16,7 @@ Public Module WS_Main
         Public Character As CharacterObject = Nothing
 
         Public _flagStopListen As Boolean = False
-        Private Socket As Socket = Nothing
+        Private WorldServerSocket As Socket = Nothing
         Public WSIP As Net.IPAddress = Net.IPAddress.Parse("0.0.0.0")
         Public WSPort As Int32 = 8086
         Private lstHostWorld As Net.IPAddress = Net.IPAddress.Parse("127.0.0.1")
@@ -50,7 +50,7 @@ Public Module WS_Main
                 Thread.Sleep(100)
                 If ConnectionWorld.Pending() Then
                     Dim WorldClient As New WorldServerClass
-                    WorldClient.Socket = ConnectionWorld.AcceptSocket
+                    WorldClient.WorldServerSocket = ConnectionWorld.AcceptSocket
 
                     Dim NewThread As New Thread(AddressOf WorldClient.ProcessWorld)
                     NewThread.Start()
@@ -60,8 +60,8 @@ Public Module WS_Main
 
 
         Public Sub ProcessWorld()
-            WSIP = CType(Socket.RemoteEndPoint, IPEndPoint).Address
-            WSPort = CType(Socket.RemoteEndPoint, IPEndPoint).Port
+            WSIP = CType(WorldServerSocket.RemoteEndPoint, IPEndPoint).Address
+            WSPort = CType(WorldServerSocket.RemoteEndPoint, IPEndPoint).Port
 
             Dim Buffer() As Byte
             Dim bytes As Integer
@@ -71,41 +71,41 @@ Public Module WS_Main
             Console.ForegroundColor = System.ConsoleColor.Gray
 
 
-            Dim writer As New PacketWriter(OpCodes.SMSG_AUTH_CHALLENGE, 6, False)
-            writer.WriteUInt8(&H0)
-            writer.WriteUInt8(&H0)
-            writer.WriteUInt8(&H0)
-            writer.WriteUInt8(&H0)
-            writer.WriteUInt8(&H0)
-            writer.WriteUInt8(&H0)
-            SendWorldClient(writer)
-            'Console.WriteLine("Successfully sent: SMSG_AUTH_CHALLENGE")
+            Dim response As New PacketWriter(OpCodes.SMSG_AUTH_CHALLENGE, False)
+            response.WriteUInt8(&H0)
+            response.WriteUInt8(&H0)
+            response.WriteUInt8(&H0)
+            response.WriteUInt8(&H0)
+            response.WriteUInt8(&H0)
+            response.WriteUInt8(&H0)
+            SendWorldClient(response)
+
+            Console.WriteLine("Successfully sent: SMSG_AUTH_CHALLENGE")
 
 
             While Not _flagStopListen
                 Thread.Sleep(100)
-                If Socket.Available > 0 Then
-                    ReDim Buffer(Socket.Available - 1)
-                    bytes = Socket.Receive(Buffer, Buffer.Length, 0)
+                If WorldServerSocket.Available > 0 Then
+                    ReDim Buffer(WorldServerSocket.Available - 1)
+                    bytes = WorldServerSocket.Receive(Buffer, Buffer.Length, 0)
 
                     OnWorldData(Buffer)
                 End If
-                If Not Socket.Connected Then Exit While
-                If (Socket.Poll(100, SelectMode.SelectRead)) And (Socket.Available = 0) Then Exit While
+                If Not WorldServerSocket.Connected Then Exit While
+                If (WorldServerSocket.Poll(100, SelectMode.SelectRead)) And (WorldServerSocket.Available = 0) Then Exit While
             End While
 
-            Socket.Close()
+            WorldServerSocket.Close()
 
 
             Console.ForegroundColor = System.ConsoleColor.DarkGray
             Console.WriteLine("[{0}] World Connection from [{1}:{2}] closed", Format(TimeOfDay, "hh:mm:ss"), WSIP, WSPort)
             Console.ForegroundColor = System.ConsoleColor.Gray
-
-            Me.DisposeWorld()
         End Sub
 
 
         Public Sub SendWorldClient(ByVal packet As PacketWriter)
+
             If packet Is Nothing Then Throw New ApplicationException("World Packet doesn't contain data!")
             SyncLock Me
                 Try
@@ -117,7 +117,7 @@ Public Module WS_Main
                     'Console.WriteLine("[{0}:{1}] World Data sent {2} bytes, opcode={3}", IP, Port, i, packet.Opcode)
 
                     'Send Data async
-                    Socket.BeginSend(buffer, 0, buffer.Length, SocketFlags.None, New AsyncCallback(AddressOf AsyncSendWorldClientCallback), Socket)
+                    WorldServerSocket.BeginSend(buffer, 0, buffer.Length, SocketFlags.None, New AsyncCallback(AddressOf AsyncSendWorldClientCallback), WorldServerSocket)
 
 
                     Dim PacketLogger As New PacketLog
@@ -128,14 +128,18 @@ Public Module WS_Main
                     Console.WriteLine("World Connection from [{0}:{1}] cause error {3}{4}", WSIP, WSPort, Err.ToString, vbNewLine)
                 End Try
             End SyncLock
+
         End Sub
 
         Public Sub AsyncSendWorldClientCallback(ByVal result As IAsyncResult)
 
             Try
-                Dim socket As Socket = TryCast(result.AsyncState, Socket)
+                Dim WorldServerSocket As Socket = TryCast(result.AsyncState, Socket)
                 Dim bytesSent As Integer = 0
-                bytesSent = socket.EndSend(result)
+                bytesSent = WorldServerSocket.EndSend(result)
+
+                'WorldServerSocket.Close()
+                'Me.DisposeWorld()
 
                 'Console.WriteLine("[{0}:{1}] World Data sent {2} bytes, opcode={3}", WSIP, WSPort, bytesSent, packet.Opcode)
                 Console.WriteLine("[{0}:{1}] World Data sent {2} bytes", WSIP, WSPort, bytesSent)
@@ -158,7 +162,6 @@ Public Module WS_Main
                     Console.WriteLine("Received unknown OpCode: {0}, Length: {1}", PacketBuffer.Opcode, PacketBuffer.Size)
                 End If
 
-
                 Dim PacketLogger As New PacketLog
                 PacketLogger.DumpPacket(data, "<<")
 
@@ -168,8 +171,6 @@ Public Module WS_Main
                 Console.WriteLine("Opcode Handler {2}:{3} caused an error:{1}{0}", Err.Message, vbNewLine, PacketBuffer.Opcode, CType(PacketBuffer.Opcode, OpCodes))
                 'Me.Delete()
             End Try
-
-
 
         End Sub
 
