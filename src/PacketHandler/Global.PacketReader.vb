@@ -6,33 +6,36 @@ Public Module Packets
     Public Class PacketReader
         Inherits BinaryReader
 
-        Public Property Opcode() As OpCodes
+        Private m_opcode As Global.Rift.NET_Reloaded.OpCodes
+        Private m_size As UShort
+
+        Public Property Opcode() As Global.Rift.NET_Reloaded.OpCodes
             Get
-                Return m_Opcode
+                Return m_opcode
             End Get
-            Set(ByVal value As OpCodes)
-                m_Opcode = Value
+
+            Set(ByVal value As Global.Rift.NET_Reloaded.OpCodes)
+                m_opcode = value
             End Set
         End Property
 
-        Private m_Opcode As OpCodes
         Public Property Size() As UShort
             Get
-                Return m_Size
+                Return m_size
             End Get
+
             Set(ByVal value As UShort)
-                m_Size = Value
+                m_size = value
             End Set
         End Property
 
-        Private m_Size As UShort
 
         Public Sub New(ByVal data As Byte(), Optional ByVal worldPacket As Boolean = True)
             MyBase.New(New MemoryStream(data))
             ' Packet header (0.5.3.3368): Size: 2 bytes + Cmd: 4 bytes
             If worldPacket Then
-                Size = CUShort((Me.ReadUInt16() \ &H100) - 4)
-                Opcode = Me.ReadUInt32()
+                Me.Size = CUShort((Me.ReadUInt16() \ &H100) - 4)
+                Me.Opcode = Me.ReadUInt32()
             End If
         End Sub
 
@@ -107,7 +110,7 @@ Public Module Packets
         Public Sub SkipBytes(ByVal count As Integer)
             MyBase.BaseStream.Position += count
         End Sub
-    End Class
 
+    End Class
 
 End Module

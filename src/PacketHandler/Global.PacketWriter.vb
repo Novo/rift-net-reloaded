@@ -6,25 +6,35 @@ Imports System.Text
     Public Class PacketWriter
     Inherits BinaryWriter
 
-        Public Property Opcode() As Opcodes
+    Private m_opcode As Global.Rift.NET_Reloaded.OpCodes
+    Private m_size As UShort
+
+    Public Property Opcode() As Global.Rift.NET_Reloaded.OpCodes
         Get
+            Return m_opcode
         End Get
-        Set(ByVal value As OpCodes)
+
+        Set(ByVal value As Global.Rift.NET_Reloaded.OpCodes)
+            m_opcode = value
         End Set
     End Property
 
     Public Property Size() As UShort
         Get
+            Return m_size
         End Get
+
         Set(ByVal value As UShort)
+            m_size = value
         End Set
     End Property
+
 
         Public Sub New()
             MyBase.New(New MemoryStream())
         End Sub
 
-    Public Sub New(ByVal opcode As OpCodes, Optional ByVal isWorldPacket As Boolean = True)
+    Public Sub New(ByVal opcode As Global.Rift.NET_Reloaded.OpCodes, Optional ByVal isWorldPacket As Boolean = True)
         MyBase.New(New MemoryStream())
         Me.Opcode = opcode
         WritePacketHeader(opcode, isWorldPacket)
@@ -57,12 +67,13 @@ Imports System.Text
 
         Size = CUShort(data.Length - 2)
         If Not isAuthPacket Then
-            data(0) = CByte((data.Length - 2) / &H100)
-            data(1) = CByte((data.Length - 2) Mod &H100)
+            data(0) = CByte(Me.Size / &H100)
+            data(1) = CByte(Me.Size Mod &H100)
         End If
 
         Return data
     End Function
+
 
         Public Sub WriteInt8(ByVal data As SByte)
             MyBase.Write(data)
