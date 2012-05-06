@@ -107,6 +107,7 @@
       <CustomToolNamespace>My</CustomToolNamespace>
       <LastGenOutput>Settings.Designer.vb</LastGenOutput>
     </None>
+    <Compile Include="Database\SQLiteBase.vb" />
     <Compile Include="Logging\ColoredConsoleWriter.vb" />
     <Compile Include="Logging\ConsoleWriter.vb" />
     <Compile Include="Logging\ErrorLog.vb" />

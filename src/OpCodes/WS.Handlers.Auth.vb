@@ -1,4 +1,7 @@
-﻿Public Module WS_Handlers_Auth
+﻿Imports System.Data
+Imports System.Data.SQLite
+
+Public Module WS_Handlers_Auth
 
 
     Public Sub On_CMSG_PLAYER_LOGIN(ByRef packet As PacketReader, ByRef Client As WorldServerClass)
@@ -39,7 +42,6 @@
 
     Public Sub On_CMSG_CHAR_DELETE(ByRef packet As PacketReader, ByRef Client As WorldServerClass)
         Console.WriteLine("[{0}] << CMSG_CHAR_DELETE", Format(TimeOfDay, "hh:mm:ss"), Client.WSIP, Client.WSPort)
-        Console.WriteLine("ToDo: Delete Character and send SMSG_CHAR_ENUM(BuildCharEnum(Index))")
 
         Dim PlayerGUID As ULong = 0
         Dim response As New PacketWriter(OpCodes.SMSG_CHAR_DELETE)
@@ -47,113 +49,117 @@
         Try
             PlayerGUID = packet.ReadUInt64() 'uint64 GUID
 
-            'Do Database Stuff (delete char and stuff with GUID)
 
-            Console.WriteLine("[{0}] Player GUID: {1} deleted. ...", Format(TimeOfDay, "hh:mm:ss"), PlayerGUID, Client.WSIP, Client.WSPort)
+            Dim success As Boolean = False
+            Dim CharDB As New SQLiteBase("characterDB")
+            Dim result As DataTable = CharDB.Select("SELECT name from characters")
+
+            success = CharDB.Execute("DELETE from characters WHERE guid = " & PlayerGUID.ToString)
+
+
+            If success Then
+                Console.WriteLine("[{0}] Player GUID: {1} deleted...", Format(TimeOfDay, "hh:mm:ss"), PlayerGUID, Client.WSIP, Client.WSPort)
+            Else
+                Console.WriteLine("[{0}] Player GUID: {1} deletion FAILED!", Format(TimeOfDay, "hh:mm:ss"), PlayerGUID, Client.WSIP, Client.WSPort)
+            End If
+
+
+            Client.SendWorldClient(response)
+
         Catch ex As Exception
             Console.WriteLine("[{0}] Player GUID: {1} deletion FAILED!", Format(TimeOfDay, "hh:mm:ss"), PlayerGUID, Client.WSIP, Client.WSPort)
         End Try
 
-        Client.SendWorldClient(response)
-    
     End Sub
+
+
+    Public Function HandleCharCreate(ByRef packet As PacketReader, ByRef response As PacketWriter) As PacketWriter
+        Dim name As String = packet.ReadString()
+        Dim race As Byte = packet.ReadByte()
+        Dim pClass As Byte = packet.ReadByte()
+        Dim gender As Byte = packet.ReadByte()
+        Dim skin As Byte = packet.ReadByte()
+        Dim face As Byte = packet.ReadByte()
+        Dim hairStyle As Byte = packet.ReadByte()
+        Dim hairColor As Byte = packet.ReadByte()
+        Dim facialHair As Byte = packet.ReadByte()
+
+
+        Dim CharDB As New SQLiteBase("characterDB")
+        Dim result As DataTable = CharDB.Select("SELECT name from characters")
+
+        Dim Count As Integer = result.Rows.Count
+        For i As Integer = 0 To Count - 1
+            If result.Rows(i).ItemArray(0).ToString() = name Then
+                response.WriteUInt8(CharCreateResponseCodes.NAME_ALREADY_TAKEN)
+                Return response
+                End
+            End If
+        Next
+
+        CharDB.Execute("INSERT INTO characters (name, account_id, race, class, gender, skin, face, hairstyle, haircolor, facialhair) VALUES (" & _
+                       "'{0}', 1, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8})", name, race, pClass, gender, skin, face, hairStyle, hairColor, facialHair)
+
+        ' Success
+        response.WriteUInt8(CharCreateResponseCodes.SUCCESS)
+        Return response
+
+    End Function
 
 
     Public Sub On_CMSG_CHAR_CREATE(ByRef packet As PacketReader, ByRef Client As WorldServerClass)
 
         Console.WriteLine("[{0}] << CMSG_CHAR_CREATE", Format(TimeOfDay, "hh:mm:ss"), Client.WSIP, Client.WSPort)
 
-        'ToDo:
-        'ask character Info and write to Database
-
-
         Dim response As New PacketWriter(OpCodes.SMSG_CHAR_CREATE)
-        response.WriteUInt8(43) 'Name already taken (40 = Success)
-        Client.SendWorldClient(response)
+        Client.SendWorldClient(HandleCharCreate(packet, response))
 
         Console.WriteLine("Successfully sent: SMSG_CHAR_CREATE")
     End Sub
 
 
-    Public Function BuildCharEnum(ByRef writer As PacketWriter) As PacketWriter
+    Public Function HandleCharEnum(ByVal DBresult As DataTable, ByVal bNumChars As Byte, ByRef response As PacketWriter) As PacketWriter
 
-        'DEBUG: Test Character
-        'writer.WriteUInt8(bNumChars) 'Number of Characters
+        For i As Integer = 0 To bNumChars - 1
+            Console.WriteLine("Read Information of Character GUID: " & i.ToString)
 
-        writer.WriteUInt64(1) 'GUID
+            response.WriteUInt64(Convert.ToUInt64(DBresult.Rows(i).ItemArray(0))) 'GUID
 
-        writer.WriteString("NoVo") 'Name
+            response.WriteString(DirectCast(DBresult.Rows(i).ItemArray(1), String)) 'Name
 
-        writer.WriteUInt8(1) 'Race
-        writer.WriteUInt8(1) 'Class
-        writer.WriteUInt8(0) 'Gender
-        writer.WriteUInt8(1) 'Skin
-        writer.WriteUInt8(1) 'Face
-        writer.WriteUInt8(1) 'HairStyle
-        writer.WriteUInt8(1) 'HairColor
-        writer.WriteUInt8(1) 'FacialHair
-        writer.WriteUInt8(1) 'Player Level
+            response.WriteUInt8(Convert.ToByte(DBresult.Rows(i).ItemArray(2))) 'Race
+            response.WriteUInt8(Convert.ToByte(DBresult.Rows(i).ItemArray(3))) 'Class
+            response.WriteUInt8(Convert.ToByte(DBresult.Rows(i).ItemArray(4))) 'Gender
+            response.WriteUInt8(Convert.ToByte(DBresult.Rows(i).ItemArray(5))) 'Skin
+            response.WriteUInt8(Convert.ToByte(DBresult.Rows(i).ItemArray(6))) 'Face
+            response.WriteUInt8(Convert.ToByte(DBresult.Rows(i).ItemArray(7))) 'HairStyle
+            response.WriteUInt8(Convert.ToByte(DBresult.Rows(i).ItemArray(8))) 'HairColor
+            response.WriteUInt8(Convert.ToByte(DBresult.Rows(i).ItemArray(9))) 'FacialHair
+            response.WriteUInt8(Convert.ToByte(DBresult.Rows(i).ItemArray(10))) 'Level
 
-        writer.WriteUInt32(0) 'ZoneID
-        writer.WriteUInt32(0) 'MapID
+            response.WriteUInt32(Convert.ToUInt32(DBresult.Rows(i).ItemArray(11))) 'ZoneID
+            response.WriteUInt32(Convert.ToUInt32(DBresult.Rows(i).ItemArray(12))) 'MapID
 
-        writer.WriteUInt32(0) 'CurX
-        writer.WriteUInt32(0) 'CurY
-        writer.WriteUInt32(0) 'CurZ
+            response.WriteSingle(Convert.ToSingle(DBresult.Rows(i).ItemArray(13))) 'CurX
+            response.WriteSingle(Convert.ToSingle(DBresult.Rows(i).ItemArray(14))) 'CurY
+            response.WriteSingle(Convert.ToSingle(DBresult.Rows(i).ItemArray(15))) 'CurZ
 
-        writer.WriteUInt32(0) 'GuildID
-        writer.WriteUInt32(0) 'PetDisp
-        writer.WriteUInt32(0) 'PetLevel
-        writer.WriteUInt32(0) 'PetFamID
+            response.WriteUInt32(Convert.ToUInt32(DBresult.Rows(i).ItemArray(16))) 'GuildID
+            response.WriteUInt32(Convert.ToUInt32(DBresult.Rows(i).ItemArray(17))) 'PetDisplayId
+            response.WriteUInt32(Convert.ToUInt32(DBresult.Rows(i).ItemArray(18))) 'PetLevel
+            response.WriteUInt32(Convert.ToUInt32(DBresult.Rows(i).ItemArray(19))) 'PetFamilyID
 
-        For j As Integer = 1 To 20 'ToDo: items [uint32 - Display ID][byte - item type]
-            writer.WriteUInt32(0)
-            writer.WriteUInt8(0)
+            ' Not implented
+            For j As Integer = 1 To 20
+                ' DisplayId [uint32]
+                ' ItemType [byte]
+                response.WriteUInt32(0)
+                response.WriteUInt8(0)
+            Next
+
         Next
 
-
-        'Next Character
-
-
-        'DEBUG: Test Character
-        'writer.WriteUInt8(bNumChars) 'Number of Characters
-
-        writer.WriteUInt64(2) 'GUID
-
-        writer.WriteString("Fabi") 'Name
-
-        writer.WriteUInt8(1) 'Race
-        writer.WriteUInt8(1) 'Class
-        writer.WriteUInt8(0) 'Gender
-        writer.WriteUInt8(1) 'Skin
-        writer.WriteUInt8(1) 'Face
-        writer.WriteUInt8(1) 'HairStyle
-        writer.WriteUInt8(1) 'HairColor
-        writer.WriteUInt8(1) 'FacialHair
-        writer.WriteUInt8(1) 'Player Level
-
-        writer.WriteUInt32(0) 'ZoneID
-        writer.WriteUInt32(0) 'MapID
-
-        writer.WriteUInt32(0) 'CurX
-        writer.WriteUInt32(0) 'CurY
-        writer.WriteUInt32(0) 'CurZ
-
-        writer.WriteUInt32(0) 'GuildID
-        writer.WriteUInt32(0) 'PetDisp
-        writer.WriteUInt32(0) 'PetLevel
-        writer.WriteUInt32(0) 'PetFamID
-
-        For j As Integer = 1 To 20 'ToDo: items [uint32 - Display ID][byte - item type]
-            writer.WriteUInt32(0)
-            writer.WriteUInt8(0)
-        Next
-
-
-        'Next Character
-
-
-        Return writer
+        Return response
     End Function
 
 
@@ -161,20 +167,23 @@
 
         Console.WriteLine("[{0}] << CMSG_CHAR_ENUM", Format(TimeOfDay, "hh:mm:ss"), Client.WSIP, Client.WSPort)
 
-        Dim bNumChars As Byte = 2
+
+        Dim bNumChars As Byte = 0
+
+
         'Get Number of Chars from Database
+        Dim CharDB As New SQLiteBase("characterDB")
 
-        If bNumChars > 0 Then
-            Dim response As New PacketWriter(OpCodes.SMSG_CHAR_ENUM)
-            response.WriteUInt8(bNumChars) 'Number of Characters
-            Client.SendWorldClient(BuildCharEnum(response))
+        Dim result As DataTable = CharDB.Select("SELECT guid, name, race, class, gender, skin, face, hairstyle, " & _
+                                                "haircolor, facialhair, level, zone, map, x, y, z, guildId, petdisplayId, " & _
+                                                "petlevel, petfamily FROM characters WHERE account_id = 1")
 
-        Else
-            'Send Empty Char List
-            Dim response As New PacketWriter(OpCodes.SMSG_CHAR_ENUM)
-            response.WriteUInt8(0)
-            Client.SendWorldClient(response)
-        End If
+        bNumChars = CByte(result.Rows.Count)
+
+        Dim response As New PacketWriter(OpCodes.SMSG_CHAR_ENUM)
+        response.WriteUInt8(bNumChars) 'Number of Characters
+        Client.SendWorldClient(HandleCharEnum(result, bNumChars, response))
+
 
         Console.WriteLine("Successfully sent: SMSG_CHAR_ENUM")
     End Sub
@@ -200,7 +209,7 @@
 
         ' If wrong Client Version, close all
         If Not clientVersion = 3368 Then 'HardCoded needed WoW Build
-            Console.WriteLine("User: " & UserName & " has attempted to log in with wrong Client build " & clientVersion)
+            Console.WriteLine("Account: " & UserName & " has attempted to log in with wrong Client build " & clientVersion)
 
             response.WriteInt8(AuthResponseCodes.WRONG_CLIENT) '6 - Wrong Client Version
             Client.SendWorldClient(response)
@@ -213,7 +222,7 @@
 
         Console.WriteLine("Successfully sent: SMSG_AUTH_RESPONSE")
 
-        Console.WriteLine("User: " & UserName & " logged in")
+        Console.WriteLine("Account: " & UserName & " logged in")
 
 
 

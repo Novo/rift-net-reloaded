@@ -65,13 +65,14 @@ Imports System.Text
             data(i) = CByte(BaseStream.ReadByte())
         Next
 
+
         Size = CUShort(data.Length - 2)
         If Not isAuthPacket Then
-            data(0) = CByte(Me.Size / &H100)
+            data(0) = CByte(Int(Me.Size / &H100)) 'WTF? VB round up. So use Int() or Math.floor() -.-
             data(1) = CByte(Me.Size Mod &H100)
         End If
 
-        Return data
+            Return data
     End Function
 
 
@@ -107,9 +108,9 @@ Imports System.Text
             MyBase.Write(data)
         End Sub
 
-        Public Sub WriteFloat(ByVal data As Single)
-            MyBase.Write(data)
-        End Sub
+    Public Sub WriteSingle(ByVal data As Single)
+        MyBase.Write(data)
+    End Sub
 
         Public Sub WriteDouble(ByVal data As Double)
             MyBase.Write(data)

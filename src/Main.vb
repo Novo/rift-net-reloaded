@@ -29,15 +29,16 @@ Public Module Main
 
         Console.ForegroundColor = System.ConsoleColor.Gray
 
+        Console.Write("Setting Process Priority to HIGH...")
         Process.GetCurrentProcess().PriorityClass = ProcessPriorityClass.High
-        Console.WriteLine("Setting Process Priority to HIGH... [done]")
+        Console.WriteLine(" [done]")
         Console.WriteLine()
 
 
         'Load Configuration File
         LoadConfigFile()
 
-        CreateDefaultDatabases()
+        InitializeDatabases()
 
 
         'Start Realm Server
@@ -60,11 +61,11 @@ Public Module Main
 
         Console.WriteLine("")
         Console.WriteLine("Load Time: {0}", Format(DateDiff(DateInterval.Second, dateTimeStarted, Now), "0 seconds"))
-        Console.WriteLine("Used Memory: {0}", Format(GC.GetTotalMemory(False), "### ### ##0 bytes"))
+        Console.WriteLine("Used Memory: {0}", Format(GC.GetTotalMemory(True), "### ### ##0 bytes"))
         Console.WriteLine("")
 
         'Log Test Output
-        Log.PrintDiagnosticTest()
+        'Log.PrintDiagnosticTest()
 
         'Add Console Input Commands
         AddConsoleCommand()
@@ -129,7 +130,7 @@ Public Module Main
                                 End If
 
 
-                            Case "quit", "shutdown", "off", "kill", "exit", "/quit", "/shutdown", "/off", "/kill", "/exit"
+                            Case "quit", "shutdown", "exit"
                                 Console.WriteLine("Server shutting down...")
                                 _flagStopListen = True
                                 RS._flagStopListen = True
@@ -138,28 +139,33 @@ Public Module Main
                                 RS.DisposeRealm()
                                 MS.DisposeMiddleMan()
                                 WS.DisposeWorld()
-                                'ToDo: kick current connections
+                                'ToDo: kick current Socket connections
 
                             Case "gccollect"
                                 GC.Collect()
 
 
-                            Case "info", "/info"
+                            Case "info"
                                 Console.WriteLine("Used memory: {0}", Format(GC.GetTotalMemory(False), "### ### ##0 bytes"))
 
 
-                            Case "help", "/help"
+                            Case "help"
                                 Console.ForegroundColor = System.ConsoleColor.Blue
-                                Console.WriteLine("Command list:")
+                                Console.WriteLine("Server Command list:")
                                 Console.ForegroundColor = System.ConsoleColor.White
                                 Console.WriteLine("---------------------------------")
                                 Console.WriteLine("")
                                 Console.WriteLine("")
-                                Console.WriteLine("'help' or '/help' - Brings up the Server Command list (this).")
+                                Console.WriteLine("'help' - Brings up the Server Command list (this).")
                                 Console.WriteLine("")
-                                Console.WriteLine("'info' or '/info' - Brings up a context menu showing server information (such as memory used).")
+                                Console.WriteLine("'info' - Brings up a context menu showing server information (such as memory used).")
                                 Console.WriteLine("")
-                                Console.WriteLine("'quit' or 'shutdown' or 'off' or 'kill' or 'exit' - Shutsdown 'WorldServer'.")
+                                Console.WriteLine("'quit' or 'shutdown' or 'exit' - Shutsdown 'WorldServer'.")
+                                Console.WriteLine("")
+                                Console.WriteLine("'create' - Creates acount and realm.")
+                                Console.WriteLine("")
+                                Console.WriteLine("'gccollect' - Call Garbage Collector to free up Memory.")
+                                Console.WriteLine("")
 
 
                             Case Else
@@ -182,66 +188,106 @@ Public Module Main
 
 #Region "Global.Database"
 
-    Public Sub CreateDefaultDatabases()
+    Public Sub InitializeDatabases()
         Try
 
             If Not File.Exists("database\realmDB.s3db") Then
-                Console.Write("[{0}] Default Databases does not exist, creating", Format(TimeOfDay, "hh:mm:ss"))
+                Console.Write("[{0}] Default Realm Database does not exist, creating", Format(TimeOfDay, "hh:mm:ss"))
             Else
-                Console.Write("[{0}] Default Databases found, checking default tables", Format(TimeOfDay, "hh:mm:ss"))
+                Console.Write("[{0}] Default Realm Database found, checking default tables", Format(TimeOfDay, "hh:mm:ss"))
             End If
 
 
-            Dim SQLconnect As New SQLite.SQLiteConnection()
-            Dim SQLcommand As SQLite.SQLiteCommand
+            Dim SQLconnect_realmDB As New SQLite.SQLiteConnection()
+            Dim SQLcommand_realmDB As SQLite.SQLiteCommand
 
-            SQLconnect.ConnectionString = "Data Source=database\realmDB.s3db; Version=3"
-            SQLconnect.Open()
 
-            SQLcommand = SQLconnect.CreateCommand
+            SQLconnect_realmDB.ConnectionString = "Data Source=database\realmDB.s3db; Version=3"
+            SQLconnect_realmDB.Open()
 
-            SQLcommand.CommandText = "CREATE TABLE IF NOT EXISTS accounts (account_id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, username VARCHAR(32) NOT NULL, password VARCHAR(32) NOT NULL, gmlevel INTEGER NOT NULL, joindate TIMESTAMP DEFAULT CURRENT_TIMESTAMP NULL, last_ip VARCHAR(15) NULL, email TEXT NULL, banned BOOLEAN NOT NULL);"
-            SQLcommand.ExecuteNonQuery()
+            SQLcommand_realmDB = SQLconnect_realmDB.CreateCommand
 
-            Console.Write(".")
-
-            'SQLcommand.CommandText = "insert into accounts (Fname,Uname,PWord) VALUES ('Admin','Admin','admin')"
-            'SQLcommand.ExecuteNonQuery()
-
-            SQLcommand.CommandText = "CREATE TABLE IF NOT EXISTS realmlist (realm_id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, realm_name VARCHAR(32) NOT NULL, gm_only BOOLEAN NOT NULL);"
-            SQLcommand.ExecuteNonQuery()
+            SQLcommand_realmDB.CommandText = "CREATE TABLE IF NOT EXISTS accounts (account_id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, username VARCHAR(32) NOT NULL, password VARCHAR(32) NOT NULL, gmlevel INTEGER NOT NULL, joindate TIMESTAMP DEFAULT CURRENT_TIMESTAMP NULL, last_ip VARCHAR(15) NULL, email TEXT NULL, banned BOOLEAN NOT NULL);"
+            SQLcommand_realmDB.ExecuteNonQuery()
 
             Console.Write(".")
 
-            'SQLcommand.CommandText = "insert into realmlist (realm_name,gm_only) VALUES ('Alpha Test Realm','0')"
-            'SQLcommand.ExecuteNonQuery()
+            'SQLcommand_realmDB.CommandText = "insert into accounts (Fname,Uname,PWord) VALUES ('Admin','Admin','admin')"
+            'SQLcommand_realmDB.ExecuteNonQuery()
 
-            SQLcommand.Dispose()
-            SQLconnect.Close()
+            SQLcommand_realmDB.CommandText = "CREATE TABLE IF NOT EXISTS realmlist (realm_id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, realm_name VARCHAR(32) NOT NULL, gm_only BOOLEAN NOT NULL);"
+            SQLcommand_realmDB.ExecuteNonQuery()
+
+            Console.Write(".")
+
+            'SQLcommand_realmDB.CommandText = "insert into realmlist (realm_name,gm_only) VALUES ('Alpha Test Realm','0')"
+            'SQLcommand_realmDB.ExecuteNonQuery()
+
+            SQLcommand_realmDB.Dispose()
+            SQLconnect_realmDB.Close()
 
             Console.WriteLine(". [done]")
 
 
-            'Dim SQLconnect As New SQLite.SQLiteConnection()
-            'Dim SQLcommand As SQLite.SQLiteCommand
 
-            SQLconnect.ConnectionString = "Data Source=database\realmDB.s3db; Version=3"
-            SQLconnect.Open()
-            SQLcommand = SQLconnect.CreateCommand
-            SQLcommand.CommandText = "SELECT realm_name FROM realmlist where realm_id='1' "
-            Dim SQLreader As SQLiteDataReader = SQLcommand.ExecuteReader()
+            'SQLconnect_realmDB.ConnectionString = "Data Source=database\realmDB.s3db; Version=3"
+            'SQLconnect_realmDB.Open()
+            'SQLcommand_realmDB = SQLconnect_realmDB.CreateCommand
+            'SQLcommand_realmDB.CommandText = "SELECT realm_name FROM realmlist where realm_id='1'"
+
+            'Dim SQLreader_realmDB As SQLiteDataReader = SQLcommand_realmDB.ExecuteReader()
+
+            'While SQLreader_realmDB.Read()
+            '    If SQLreader_realmDB(0).ToString <> "" Then Config.RealmName = SQLreader_realmDB(0).ToString
+            '    Console.Write(String.Format("realm_name= {0}", SQLreader_realmDB(0)))
+            '    'Console.Write(String.Format("realm_id= {0}, realm_name= {1}, gm_only= {2}", SQLreader_realmDB(0), SQLreader_realmDB(1), SQLreader_realmDB(2)))
+            '    Console.WriteLine("")
+            'End While
+
+            'SQLcommand_realmDB.Dispose()
+            'SQLconnect_realmDB.Close()
 
 
-            While SQLreader.Read()
-                If SQLreader(0).ToString <> "" Then Config.RealmName = SQLreader(0).ToString
-                Console.Write(String.Format("realm_name= {0}", SQLreader(0)))
-                'Console.Write(String.Format("realm_id= {0}, realm_name= {1}, gm_only= {2}", SQLreader(0), SQLreader(1), SQLreader(2)))
-                Console.WriteLine("")
-            End While
 
-            SQLcommand.Dispose()
-            SQLconnect.Close()
 
+
+
+            If Not File.Exists("database\characterDB.s3db") Then
+                Console.Write("[{0}] Default Character Database does not exist, creating", Format(TimeOfDay, "hh:mm:ss"))
+            Else
+                Console.Write("[{0}] Default Character Database found, checking default tables", Format(TimeOfDay, "hh:mm:ss"))
+            End If
+
+
+            Dim SQLconnect_characterDB As New SQLite.SQLiteConnection()
+            Dim SQLcommand_characterDB As SQLite.SQLiteCommand
+
+            SQLconnect_characterDB.ConnectionString = "Data Source=database\characterDB.s3db; Version=3"
+            SQLconnect_characterDB.Open()
+
+            SQLcommand_characterDB = SQLconnect_characterDB.CreateCommand
+
+            SQLcommand_characterDB.CommandText = "CREATE TABLE IF NOT EXISTS characters " & _
+            "(guid INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, account_id INTEGER NOT NULL, name VARCHAR(32) NOT NULL, race INTEGER NOT NULL, class INTEGER NOT NULL, gender INTEGER NOT NULL, skin INTEGER NOT NULL, face INTEGER NOT NULL, hairstyle INTEGER NOT NULL, haircolor INTEGER NOT NULL, facialhair INTEGER NOT NULL, level INTEGER NOT NULL DEFAULT 1, zone INTEGER NOT NULL DEFAULT 0, map INTEGER NOT NULL DEFAULT 0, x REAL NOT NULL DEFAULT 0, y REAL NOT NULL DEFAULT 0, z REAL NOT NULL DEFAULT 0, guildId INTEGER NOT NULL DEFAULT 0, petdisplayId INTEGER NOT NULL DEFAULT 0, petlevel INTEGER NOT NULL DEFAULT 0, petfamily INTEGER NOT NULL DEFAULT 0);"
+            SQLcommand_characterDB.ExecuteNonQuery()
+
+            Console.Write(".")
+
+            'SQLcommand_characterDB.CommandText = "insert into accounts (Fname,Uname,PWord) VALUES ('Admin','Admin','admin')"
+            'SQLcommand_characterDB.ExecuteNonQuery()
+
+            'SQLcommand_characterDB.CommandText = "CREATE TABLE IF NOT EXISTS ...);"
+            'SQLcommand_characterDB.ExecuteNonQuery()
+
+            Console.Write(".")
+
+            'SQLcommand_characterDB.CommandText = "insert into realmlist (realm_name,gm_only) VALUES ('Alpha Test Realm','0')"
+            'SQLcommand_characterDB.ExecuteNonQuery()
+
+            SQLcommand_characterDB.Dispose()
+            SQLconnect_characterDB.Close()
+
+            Console.WriteLine(". [done]")
 
 
         Catch e As Exception

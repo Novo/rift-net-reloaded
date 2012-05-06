@@ -17,6 +17,22 @@
     CMSG_PLAYER_LOGIN = &H3D '61
 End Enum
 
+Enum CharCreateResponseCodes
+    SUCCESS = &H28 '40 (Success)
+    NAME_ALREADY_TAKEN = &H2B '43 (Name already taken)
+End Enum
+
+Enum AuthLoginCodes
+    CHAR_LOGIN_FAILED = 0                       'Login failed
+    CHAR_LOGIN_NO_WORLD = 1                     'World server is down
+    CHAR_LOGIN_DUPLICATE_CHARACTER = 2          'A character with that name already exists
+    CHAR_LOGIN_NO_INSTANCES = 3                 'No instance servers are available
+    CHAR_LOGIN_DISABLED = 4                     'Login for that race and/or class is currently disabled
+    CHAR_LOGIN_NO_CHARACTER = 5                 'Character not found
+    CHAR_LOGIN_LOCKED_FOR_TRANSFER = 6
+    CHAR_LOGIN_LOCKED_BY_BILLING = 7
+End Enum
+
 Enum AuthResponseCodes
     WRONG_CLIENT = &H6 '6
     AUTH_OK = &HC '12
@@ -30,15 +46,4 @@ Enum AuthResponseCodes
     '24  Server shutting down
     '27  Position in queue
     '    [INT] - Position
-End Enum
-
-Enum AuthLoginCodes
-    CHAR_LOGIN_FAILED = 0                       'Login failed
-    CHAR_LOGIN_NO_WORLD = 1                     'World server is down
-    CHAR_LOGIN_DUPLICATE_CHARACTER = 2          'A character with that name already exists
-    CHAR_LOGIN_NO_INSTANCES = 3                 'No instance servers are available
-    CHAR_LOGIN_DISABLED = 4                     'Login for that race and/or class is currently disabled
-    CHAR_LOGIN_NO_CHARACTER = 5                 'Character not found
-    CHAR_LOGIN_LOCKED_FOR_TRANSFER = 6
-    CHAR_LOGIN_LOCKED_BY_BILLING = 7
 End Enum
