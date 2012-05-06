@@ -49,7 +49,6 @@ Public Module WS_Handlers_Auth
         Try
             PlayerGUID = packet.ReadUInt64() 'uint64 GUID
 
-
             Dim success As Boolean = False
             Dim CharDB As New SQLiteBase("characterDB")
             Dim result As DataTable = CharDB.Select("SELECT name from characters")
@@ -65,6 +64,8 @@ Public Module WS_Handlers_Auth
 
 
             Client.SendWorldClient(response)
+
+            CharDB.DisposeDatabaseConnection()
 
         Catch ex As Exception
             Console.WriteLine("[{0}] Player GUID: {1} deletion FAILED!", Format(TimeOfDay, "hh:mm:ss"), PlayerGUID, Client.WSIP, Client.WSPort)
@@ -99,6 +100,8 @@ Public Module WS_Handlers_Auth
 
         CharDB.Execute("INSERT INTO characters (name, account_id, race, class, gender, skin, face, hairstyle, haircolor, facialhair) VALUES (" & _
                        "'{0}', 1, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8})", name, race, pClass, gender, skin, face, hairStyle, hairColor, facialHair)
+
+        CharDB.DisposeDatabaseConnection()
 
         ' Success
         response.WriteUInt8(CharCreateResponseCodes.SUCCESS)
@@ -167,13 +170,9 @@ Public Module WS_Handlers_Auth
 
         Console.WriteLine("[{0}] << CMSG_CHAR_ENUM", Format(TimeOfDay, "hh:mm:ss"), Client.WSIP, Client.WSPort)
 
-
         Dim bNumChars As Byte = 0
 
-
-        'Get Number of Chars from Database
         Dim CharDB As New SQLiteBase("characterDB")
-
         Dim result As DataTable = CharDB.Select("SELECT guid, name, race, class, gender, skin, face, hairstyle, " & _
                                                 "haircolor, facialhair, level, zone, map, x, y, z, guildId, petdisplayId, " & _
                                                 "petlevel, petfamily FROM characters WHERE account_id = 1")
@@ -184,6 +183,7 @@ Public Module WS_Handlers_Auth
         response.WriteUInt8(bNumChars) 'Number of Characters
         Client.SendWorldClient(HandleCharEnum(result, bNumChars, response))
 
+        CharDB.DisposeDatabaseConnection()
 
         Console.WriteLine("Successfully sent: SMSG_CHAR_ENUM")
     End Sub

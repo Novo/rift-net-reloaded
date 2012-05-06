@@ -48,16 +48,11 @@ Public Class SQLiteBase
 
         Try
             sqlCommand.ExecuteNonQuery()
-
             Return True
         Catch ex As SQLiteException
             'Log.Message(LogType.[ERROR], "{0}", ex.Message)
             Return False
         End Try
-
-        sqlCommand.Dispose()
-        SqlData.Close()
-        Connection.Close()
 
     End Function
 
@@ -74,12 +69,7 @@ Public Class SQLiteBase
             'Log.Message(LogType.[ERROR], "{0}", ex.Message)
         End Try
 
-        sqlCommand.Dispose()
-        SqlData.Close()
-        Connection.Close()
-
         Return retData
-
     End Function
 
 
