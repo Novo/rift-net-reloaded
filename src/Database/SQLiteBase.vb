@@ -35,8 +35,12 @@ Public Class SQLiteBase
 
 
     Public Sub DisposeDatabaseConnection() Implements System.IDisposable.Dispose
-        SqlData.Close()
-        Connection.Close()
+        Try
+            SqlData.Close()
+            Connection.Close()
+        Catch ex As Exception
+
+        End Try
     End Sub
 
 

@@ -104,7 +104,10 @@ Public Module Packets
         End Function
 
         Public Function ReadAccountName() As String
-            Return ReadString(&HD).ToUpper()
+            Dim name As String = ReadString(&HD).ToUpper()
+            Me.ReadUInt8()
+
+            Return name
         End Function
 
         Public Sub SkipBytes(ByVal count As Integer)

@@ -35,7 +35,9 @@ End Enum
 
 Enum AuthResponseCodes
     WRONG_CLIENT = &H6 '6
+    AUTH = &HB '11
     AUTH_OK = &HC '12
+    AUTH_FAILED = &HD '13
     QUEUE = &H1B  '27
 
     '[BYTE] - Auth response

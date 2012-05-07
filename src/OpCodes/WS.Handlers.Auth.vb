@@ -94,7 +94,7 @@ Public Module WS_Handlers_Auth
             If result.Rows(i).ItemArray(0).ToString() = name Then
                 response.WriteUInt8(CharCreateResponseCodes.NAME_ALREADY_TAKEN)
                 Return response
-                End
+                Exit Function
             End If
         Next
 
@@ -197,19 +197,18 @@ Public Module WS_Handlers_Auth
         Dim clientVersion As Integer = packet.ReadInt32
         Dim clientSesionID As Integer = packet.ReadInt32
         Dim clientAccount As String = packet.ReadAccountName
+        Dim clientPassword As String = packet.ReadString
 
-        Dim UserName As String = ""
-        Dim Password As String = ""
-
-        UserName = clientAccount
-        Password = ""
-
+        'Start Sending Auth ...
+        Dim responseAuth As New PacketWriter(OpCodes.SMSG_AUTH_RESPONSE)
+        responseAuth.WriteInt8(AuthResponseCodes.AUTH)
+        Client.SendWorldClient(responseAuth)
 
         Dim response As New PacketWriter(OpCodes.SMSG_AUTH_RESPONSE)
 
-        ' If wrong Client Version, close all
+        'If wrong Client Version, close all
         If Not clientVersion = 3368 Then 'HardCoded needed WoW Build
-            Console.WriteLine("Account: " & UserName & " has attempted to log in with wrong Client build " & clientVersion)
+            Console.WriteLine("Account: " & clientAccount & " has attempted to log in with wrong Client build " & clientVersion)
 
             response.WriteInt8(AuthResponseCodes.WRONG_CLIENT) '6 - Wrong Client Version
             Client.SendWorldClient(response)
@@ -217,53 +216,54 @@ Public Module WS_Handlers_Auth
             Exit Sub
         End If
 
-        response.WriteInt8(AuthResponseCodes.AUTH_OK) '12 - Success
-        Client.SendWorldClient(response)
+        'if account is already logged in, disconnected it and procede with new login...
+        'ToDo
 
-        Console.WriteLine("Successfully sent: SMSG_AUTH_RESPONSE")
+        'If wrong Password, close all
+        Dim AccountDB As New SQLiteBase("characterDB")
 
-        Console.WriteLine("Account: " & UserName & " logged in")
+        Try
+            Dim result As DataTable = AccountDB.Select("SELECT ...")
 
+            Dim Count As Integer = result.Rows.Count
+            For i As Integer = 0 To Count - 1
 
+                If result.Rows(i).ItemArray(0).ToString() = clientPassword Then
+                    response.WriteInt8(AuthResponseCodes.AUTH_OK)
+                    Client.SendWorldClient(response)
 
-        'ToDo:
-        'aSession(Index) = New Session
-        'If aSession(Index).InitSession(strUsername) = False Then 'If User does NOT exist
-        '    If AutoCreate = "true" Then 'If AutoCreate = true then create and Login, else Incorrect Password
-        '        SaveConfig(aSession(Index).GetAccountFile, "Account", "GM", "0")
-        '        SaveConfig(aSession(Index).GetAccountFile, "Account", "Password", strPassword)
-        '        SaveConfig(aSession(Index).GetAccountFile, "Account", "NumChars", 0)
-        '        SaveConfig(aSession(Index).GetAccountFile, "Account", "Chars", "")
-        '        COut("Account '" & strUsername & "' created.")
-        '        frmMain.World(Index).SendData(SMSG_AUTH_RESPONSE(34)) 'account created
-        '    Else
-        '        COut("Account '" & strUsername & "' does not exist.")
-        '        frmMain.World(Index).SendData(SMSG_AUTH_RESPONSE(22)) 'Incorrect Password
-        '        Exit Sub
-        '    End If
-        'End If
+                    Console.WriteLine("Successfully sent: SMSG_AUTH_RESPONSE")
+                    Console.WriteLine("Account: " & clientAccount & " logged in.")
+                    Exit Sub
+                Else
+                    If Config.AutoCreate Then
+                        'create account
+                        'AccountDB.Execute("INSERT INTO accounts...")
+                        'send success
 
-        'If GetConfig(aSession(Index).GetAccountFile, "Account", "Password") = strPassword Then 'if the MD5 Hash match
+                        Exit Sub
+                    Else
+                        response.WriteInt8(AuthResponseCodes.AUTH_FAILED)
 
-        '    COut("Account: " & strUsername & " has logged in.")
-        '    frmMain.World(Index).SendData(SMSG_AUTH_RESPONSE(12)) 'Success
+                        Console.WriteLine("Successfully sent: SMSG_AUTH_RESPONSE")
+                        Console.WriteLine("Account: " & clientAccount & " tried to login with wrong password.")
+                    End If
 
-        '    Dim ConnSockets As Integer
-        '    For ConnSockets = 1 To totalSockets
-        '        'if account is already logged in, disconnected it and procede with new login...
-        '        If ConnSockets = Index Then 'If ConnSockets = me then do NOT
-        '            'don't do shit
-        '        ElseIf aSession(ConnSockets).GetAccount = strUsername Then
-        '            frmMain.World(ConnSockets).Close()
-        '        End If
-        '        DoEvents()
-        '    Next ConnSockets
+                    Exit Sub
+                End If
 
-        'Else
-        '    COut(strUsername & " has failed to log in.")
-        '    frmMain.World(Index).SendData(SMSG_AUTH_RESPONSE(22)) 'Incorrect Password
-        'End If
-        'Exit Sub
+            Next
+
+            AccountDB.DisposeDatabaseConnection()
+            response.WriteInt8(AuthResponseCodes.AUTH_FAILED)
+            Client.SendWorldClient(response)
+
+        Catch ex As Exception
+            AccountDB.DisposeDatabaseConnection()
+            response.WriteInt8(AuthResponseCodes.AUTH_FAILED)
+            Client.SendWorldClient(response)
+        End Try
+
     End Sub
 
 
@@ -276,7 +276,7 @@ Public Module WS_Handlers_Auth
         Client.SendWorldClient(response)
 
         Console.WriteLine("Successfully sent: SMSG_PONG")
-
     End Sub
+
 
 End Module
