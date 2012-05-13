@@ -22,7 +22,7 @@ Public Class frmMain
             Dim myWriter As New System.IO.StreamWriter(myFileStream)
 
             'Write in what is in the text box
-            myWriter.WriteLine(txtUserName.Text & vbCrLf & crypt.getMd5Hash(txtPassword.Text))
+            myWriter.Write(txtUserName.Text & vbCrLf & crypt.getMd5Hash(txtPassword.Text))
 
             'Flush before we close
             myWriter.Flush()

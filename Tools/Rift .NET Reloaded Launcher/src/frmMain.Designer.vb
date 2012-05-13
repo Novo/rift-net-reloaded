@@ -91,6 +91,8 @@ Partial Class frmMain
         'chkboxWindowed
         '
         Me.chkboxWindowed.AutoSize = True
+        Me.chkboxWindowed.Checked = True
+        Me.chkboxWindowed.CheckState = System.Windows.Forms.CheckState.Checked
         Me.chkboxWindowed.Location = New System.Drawing.Point(15, 168)
         Me.chkboxWindowed.Name = "chkboxWindowed"
         Me.chkboxWindowed.Size = New System.Drawing.Size(77, 17)

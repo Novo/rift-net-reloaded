@@ -27,7 +27,7 @@ Public Class ConsoleWriter
     Public Overrides Sub WriteLine(ByVal type As LogType, ByVal formatStr As String, ByVal ParamArray arg() As Object)
         If LogLevel > type Then Return
 
-        Console.WriteLine(L(type) & ":" & "[" & Format(TimeOfDay, "HH:mm:ss") & "] " & formatStr, arg)
+        Console.WriteLine("[" & Format(TimeOfDay, "HH:mm:ss") & "] " & formatStr, arg)
     End Sub
 
 

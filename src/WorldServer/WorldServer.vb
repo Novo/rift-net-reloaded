@@ -105,14 +105,15 @@ Public Module WS_Main
 
 
         Public Sub SendWorldClient(ByVal packet As PacketWriter)
-
             If packet Is Nothing Then Throw New ApplicationException("World Packet doesn't contain data!")
+
             SyncLock Me
+
                 Try
                     Dim buffer As Byte() = packet.ReadDataToSend()
 
                     'Send Data sync:
-                    Dim bytesSent As Integer = 0
+                    'Dim bytesSent As Integer = 0
                     'bytesSent = Socket.Send(buffer, 0, buffer.Length, SocketFlags.None)
                     'Console.WriteLine("[{0}:{1}] World Data sent {2} bytes, opcode={3}", IP, Port, i, packet.Opcode)
 
@@ -123,12 +124,11 @@ Public Module WS_Main
                     Dim PacketLogger As New PacketLog
                     PacketLogger.DumpPacket(buffer, ">>")
 
-
-                Catch Err As Exception
-                    Console.WriteLine("World Connection from [{0}:{1}] cause error {3}{4}", WSIP, WSPort, Err.ToString, vbNewLine)
+                Catch ex As Exception
+                    Console.WriteLine("World Connection from [{0}:{1}] cause error {3}", WSIP, WSPort, ex.ToString & Environment.NewLine)
                 End Try
-            End SyncLock
 
+            End SyncLock
         End Sub
 
         Public Sub AsyncSendWorldClientCallback(ByVal result As IAsyncResult)
@@ -141,11 +141,10 @@ Public Module WS_Main
                 'WorldServerSocket.Close()
                 'Me.DisposeWorld()
 
-                'Console.WriteLine("[{0}:{1}] World Data sent {2} bytes, opcode={3}", WSIP, WSPort, bytesSent, packet.Opcode)
                 Console.WriteLine("[{0}:{1}] World Data sent {2} bytes", WSIP, WSPort, bytesSent)
 
             Catch socketException As SocketException
-                Console.WriteLine("World Connection from [{0}:{1}] cause error {3}{4}", WSIP, WSPort, socketException.Message.ToString, vbNewLine)
+                Console.WriteLine("World Connection from [{0}:{1}] cause error {3}", WSIP, WSPort, socketException.Message.ToString & Environment.NewLine)
             End Try
 
         End Sub
@@ -153,7 +152,7 @@ Public Module WS_Main
 
         Public Sub OnWorldData(ByVal data() As Byte)
             Dim PacketBuffer As New PacketReader(data)
-
+            
             Try
                 If [Enum].IsDefined(GetType(OpCodes), PacketBuffer.Opcode) Then
                     Console.WriteLine("Recieved OpCode: {0}, Length: {1}", PacketBuffer.Opcode, PacketBuffer.Size)
@@ -166,10 +165,9 @@ Public Module WS_Main
                 PacketLogger.DumpPacket(data, "<<")
 
 
-            Catch Err As Exception
+            Catch ex As Exception
                 Console.WriteLine("World Connection from [{0}:{1}] caused an error {2}{3}", WSIP, WSPort, Err.ToString, vbNewLine)
-                Console.WriteLine("Opcode Handler {2}:{3} caused an error:{1}{0}", Err.Message, vbNewLine, PacketBuffer.Opcode, CType(PacketBuffer.Opcode, OpCodes))
-                'Me.Delete()
+                Console.WriteLine("Opcode Handler {2}:{3} caused an error:{1}{0}", ex.Message, vbNewLine, PacketBuffer.Opcode, CType(PacketBuffer.Opcode, OpCodes))
             End Try
 
         End Sub

@@ -47,8 +47,8 @@ Imports System.Text
         WriteUInt8(0)
         WriteUInt8(0)
 
-        WriteUInt8(CByte(CUInt(opcode) Mod &H100))
-        WriteUInt8(CByte(CUInt(opcode) \ &H100))
+        WriteUInt8(CByte(opcode Mod &H100))
+        WriteUInt8(CByte(opcode \ &H100))
 
         If isWorldPacket Then
             WriteUInt8(0)
@@ -58,17 +58,17 @@ Imports System.Text
 
 
     Public Function ReadDataToSend(Optional ByVal isAuthPacket As Boolean = False) As Byte()
-        Dim data As Byte() = New Byte(BaseStream.Length - 1) {}
+        Dim data As Byte() = New Byte(CInt((BaseStream.Length - 1))) {}
         Seek(0, SeekOrigin.Begin)
 
-        For i As Integer = 0 To BaseStream.Length - 1
+        For i As Integer = 0 To CInt(BaseStream.Length - 1)
             data(i) = CByte(BaseStream.ReadByte())
         Next
 
 
         Size = CUShort(data.Length - 2)
         If Not isAuthPacket Then
-            data(0) = CByte(Int(Me.Size / &H100)) 'WTF? VB round up. So use Int() or Math.floor() -.-
+            data(0) = CByte(Int(Me.Size / &H100))
             data(1) = CByte(Me.Size Mod &H100)
         End If
 

@@ -6,15 +6,15 @@ Public Module Packets
     Public Class PacketReader
         Inherits BinaryReader
 
-        Private m_opcode As Global.Rift.NET_Reloaded.OpCodes
+        Private m_opcode As OpCodes
         Private m_size As UShort
 
-        Public Property Opcode() As Global.Rift.NET_Reloaded.OpCodes
+        Public Property Opcode() As OpCodes
             Get
                 Return m_opcode
             End Get
 
-            Set(ByVal value As Global.Rift.NET_Reloaded.OpCodes)
+            Set(ByVal value As OpCodes)
                 m_opcode = value
             End Set
         End Property
@@ -35,7 +35,7 @@ Public Module Packets
             ' Packet header (0.5.3.3368): Size: 2 bytes + Cmd: 4 bytes
             If worldPacket Then
                 Me.Size = CUShort((Me.ReadUInt16() \ &H100) - 4)
-                Me.Opcode = Me.ReadUInt32()
+                Me.Opcode = Me.ReadUInt32
             End If
         End Sub
 

@@ -18,9 +18,9 @@
             Next
 
             buffer += "|  " & BitConverter.ToString(data, j, data.Length Mod 16).Replace("-", " ")
-            buffer += New String(" ", (16 - data.Length Mod 16) * 3)
+            buffer += New String(CChar(" "), (16 - data.Length Mod 16) * 3)
             buffer += " |  " & System.Text.Encoding.ASCII.GetString(data, j, data.Length Mod 16).Replace(vbTab, "?").Replace(vbBack, "?").Replace(vbCr, "?").Replace(vbFormFeed, "?").Replace(vbLf, "?")
-            buffer += New String(" ", 16 - data.Length Mod 16)
+            buffer += New String(CChar(" "), 16 - data.Length Mod 16)
             buffer += " |" & vbNewLine
         End If
 

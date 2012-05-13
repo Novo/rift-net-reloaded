@@ -26,8 +26,9 @@
         Public JoinedChannels As New List(Of String)
 
 
-        Public Sub New(ByVal g As ULong, ByRef c As WorldServerClass)
-            '
+        Public Sub New(ByVal PlayerGUID As ULong, ByRef WorldServerClass As WorldServerClass)
+            Me.Client = WorldServerClass
+            Me.GUID = PlayerGUID
         End Sub
 
         Public Sub Dispose() Implements IDisposable.Dispose
@@ -43,10 +44,9 @@
         End Sub
 
 
-        Public Function Build_SMSG_UPDATE_OBJECT(ByVal GUID As ULong) As String
-            Dim strBuffer As String = ""
+        Public Function Build_SMSG_UPDATE_OBJECT(ByRef packet As PacketReader, ByRef response As PacketWriter) As PacketWriter
 
-            Return strBuffer
+            Return response
         End Function
 
 

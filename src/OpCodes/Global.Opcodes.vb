@@ -1,4 +1,4 @@
-﻿<Flags()> Public Enum OpCodes As UShort
+﻿Public Enum OpCodes As UShort
     'Realm Login
     SMSG_AUTH_CHALLENGE = &H1DD '477
     SMSG_AUTH_RESPONSE = &H1DF '279
@@ -17,23 +17,23 @@
     CMSG_PLAYER_LOGIN = &H3D '61
 End Enum
 
-Enum CharCreateResponseCodes
+Enum CharCreateResponseCodes As Byte
     SUCCESS = &H28 '40 (Success)
     NAME_ALREADY_TAKEN = &H2B '43 (Name already taken)
 End Enum
 
-Enum AuthLoginCodes
-    CHAR_LOGIN_FAILED = 0                       'Login failed
-    CHAR_LOGIN_NO_WORLD = 1                     'World server is down
-    CHAR_LOGIN_DUPLICATE_CHARACTER = 2          'A character with that name already exists
-    CHAR_LOGIN_NO_INSTANCES = 3                 'No instance servers are available
-    CHAR_LOGIN_DISABLED = 4                     'Login for that race and/or class is currently disabled
-    CHAR_LOGIN_NO_CHARACTER = 5                 'Character not found
-    CHAR_LOGIN_LOCKED_FOR_TRANSFER = 6
-    CHAR_LOGIN_LOCKED_BY_BILLING = 7
+Enum AuthLoginCodes As Byte
+    CHAR_LOGIN_FAILED = 0               'Login failed
+    CHAR_LOGIN_NO_WORLD = 1             'World server is down
+    CHAR_LOGIN_DUPLICATE_CHARACTER = 2  'A character with that name already exists
+    CHAR_LOGIN_NO_INSTANCES = 3         'No instance servers are available
+    CHAR_LOGIN_DISABLED = 4             'Login for that race and/or class is currently disabled
+    CHAR_LOGIN_NO_CHARACTER = 5         'Character not found
+    CHAR_LOGIN_LOCKED_FOR_TRANSFER = 6  '?
+    CHAR_LOGIN_LOCKED_BY_BILLING = 7    '?
 End Enum
 
-Enum AuthResponseCodes
+Enum AuthResponseCodes As Byte
     WRONG_CLIENT = &H6 '6
     AUTH = &HB '11
     AUTH_OK = &HC '12

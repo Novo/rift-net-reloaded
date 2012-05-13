@@ -81,7 +81,7 @@ Public Module Main
             Try
                 Console.Write("Rift>")
                 tmp = Console.ReadLine()
-                CommandList = tmp.Split(";")
+                CommandList = tmp.Split(CChar(";"))
 
                 For varList = LBound(CommandList) To UBound(CommandList) 'accept more than one command in one row, seperated with ";"
                     cmds = Split(CommandList(varList), " ", 5) 'command + 4 parameters
@@ -95,7 +95,44 @@ Public Module Main
                                     Select Case cmds(1).ToLower
                                         Case "account"
                                             If cmds.Length > 3 Then
-                                                Console.WriteLine("Account " & cmds(2) & " created.")
+
+                                                Try
+                                                    Dim crypt As New Crypt
+                                                    Dim RealmDB As New SQLiteBase("realmDB")
+                                                    Dim result As DataTable = RealmDB.Select("SELECT username from accounts")
+                                                    Dim alreadyexist As Boolean = False
+                                                    Dim success As Boolean = False
+
+                                                    Dim Count As Integer = result.Rows.Count
+
+                                                    For i As Integer = 0 To Count - 1
+                                                        If result.Rows(i).ItemArray(0).ToString() = cmds(1) Then 'if username is already in Database:
+                                                            alreadyexist = True
+                                                            RealmDB.DisposeDatabaseConnection()
+                                                            Console.WriteLine("[{0}] Account already exist!", Format(TimeOfDay, "hh:mm:ss"))
+                                                            Exit For
+                                                        End If
+                                                    Next
+
+                                                    If Not alreadyexist Then
+                                                        success = RealmDB.Execute("INSERT INTO accounts (username, password) VALUES (" & _
+                                                                       "'{0}', '{1}')", cmds(2).ToUpper, crypt.getMd5Hash(cmds(3)))
+                                                        RealmDB.DisposeDatabaseConnection()
+
+                                                        If success Then
+                                                            Console.WriteLine("[{0}] Account " & cmds(2) & " successfully created!", Format(TimeOfDay, "hh:mm:ss"))
+                                                        Else
+                                                            Console.WriteLine("[{0}] Account Creation FAILED!", Format(TimeOfDay, "hh:mm:ss"))
+                                                        End If
+
+
+                                                    End If
+
+                                                Catch ex As Exception
+                                                    Console.WriteLine("[{0}] Account Creation FAILED!", Format(TimeOfDay, "hh:mm:ss"))
+                                                End Try
+
+
                                             Else
                                                 Console.WriteLine("'create' commands are: create account [username] [password]")
                                             End If
@@ -111,10 +148,10 @@ Public Module Main
 
                                                 SQLcommand = SQLconnect.CreateCommand
 
-                                                SQLcommand.CommandText = "insert into realmlist (realm_name,gm_only) VALUES ('" & cmds(2) & "','0')"
+                                                SQLcommand.CommandText = "insert into realmlist (realm_name) VALUES ('" & cmds(2) & "')"
                                                 SQLcommand.ExecuteNonQuery()
 
-                                                Console.WriteLine("Realm " & cmds(2) & " created.")
+                                                Console.WriteLine("[{0}] Realm " & cmds(2) & " successfully created!", Format(TimeOfDay, "hh:mm:ss"))
                                             Else
                                                 Console.WriteLine("'create' commands are: create realm [realmname]")
                                             End If
@@ -189,6 +226,46 @@ Public Module Main
 #Region "Global.Database"
 
     Public Sub InitializeDatabases()
+
+
+        'Create Character Database
+        Try
+
+            If Not File.Exists("database\characterDB.s3db") Then
+                Console.Write("[{0}] Default Character Database does not exist, creating", Format(TimeOfDay, "hh:mm:ss"))
+            Else
+                Console.Write("[{0}] Default Character Database found, checking default tables", Format(TimeOfDay, "hh:mm:ss"))
+            End If
+
+
+            Dim SQLconnect_characterDB As New SQLite.SQLiteConnection()
+            Dim SQLcommand_characterDB As SQLite.SQLiteCommand
+
+            SQLconnect_characterDB.ConnectionString = "Data Source=database\characterDB.s3db; Version=3"
+            SQLconnect_characterDB.Open()
+
+            Console.Write(".")
+
+            SQLcommand_characterDB = SQLconnect_characterDB.CreateCommand
+
+            SQLcommand_characterDB.CommandText = "CREATE TABLE IF NOT EXISTS characters " & _
+            "(guid INTEGER DEFAULT 1 NOT NULL PRIMARY KEY AUTOINCREMENT, account_id INTEGER NOT NULL, name VARCHAR(32) NOT NULL, race INTEGER NOT NULL, class INTEGER NOT NULL, gender INTEGER NOT NULL, skin INTEGER NOT NULL, face INTEGER NOT NULL, hairstyle INTEGER NOT NULL, haircolor INTEGER NOT NULL, facialhair INTEGER NOT NULL, level INTEGER NOT NULL DEFAULT 1, zone INTEGER NOT NULL DEFAULT 0, map INTEGER NOT NULL DEFAULT 0, x REAL NOT NULL DEFAULT 0, y REAL NOT NULL DEFAULT 0, z REAL NOT NULL DEFAULT 0, guildId INTEGER NOT NULL DEFAULT 0, petdisplayId INTEGER NOT NULL DEFAULT 0, petlevel INTEGER NOT NULL DEFAULT 0, petfamily INTEGER NOT NULL DEFAULT 0);"
+            SQLcommand_characterDB.ExecuteNonQuery()
+
+            Console.Write(".")
+
+            SQLcommand_characterDB.Dispose()
+            SQLconnect_characterDB.Close()
+
+            Console.WriteLine(". [done]")
+
+        Catch ex As Exception
+            Console.WriteLine(ex.ToString)
+        End Try
+
+
+
+        'Create Realm Database
         Try
 
             If Not File.Exists("database\realmDB.s3db") Then
@@ -207,93 +284,27 @@ Public Module Main
 
             SQLcommand_realmDB = SQLconnect_realmDB.CreateCommand
 
-            SQLcommand_realmDB.CommandText = "CREATE TABLE IF NOT EXISTS accounts (account_id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, username VARCHAR(32) NOT NULL, password VARCHAR(32) NOT NULL, gmlevel INTEGER NOT NULL, joindate TIMESTAMP DEFAULT CURRENT_TIMESTAMP NULL, last_ip VARCHAR(15) NULL, email TEXT NULL, banned BOOLEAN NOT NULL);"
+            SQLcommand_realmDB.CommandText = "CREATE TABLE IF NOT EXISTS accounts (account_id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, username VARCHAR(32) NOT NULL, password VARCHAR(32) NOT NULL, gmlevel INTEGER DEFAULT 0 NOT NULL, joindate TIMESTAMP DEFAULT CURRENT_TIMESTAMP NULL, last_ip VARCHAR(15) NULL, email TEXT NULL, banned BOOLEAN NOT NULL DEFAULT FALSE);"
             SQLcommand_realmDB.ExecuteNonQuery()
 
             Console.Write(".")
 
-            'SQLcommand_realmDB.CommandText = "insert into accounts (Fname,Uname,PWord) VALUES ('Admin','Admin','admin')"
-            'SQLcommand_realmDB.ExecuteNonQuery()
-
-            SQLcommand_realmDB.CommandText = "CREATE TABLE IF NOT EXISTS realmlist (realm_id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, realm_name VARCHAR(32) NOT NULL, gm_only BOOLEAN NOT NULL);"
+            SQLcommand_realmDB.CommandText = "CREATE TABLE IF NOT EXISTS realmlist (realm_id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, realm_name VARCHAR(32) NOT NULL, gm_only BOOLEAN NOT NULL DEFAULT FALSE);"
             SQLcommand_realmDB.ExecuteNonQuery()
 
             Console.Write(".")
-
-            'SQLcommand_realmDB.CommandText = "insert into realmlist (realm_name,gm_only) VALUES ('Alpha Test Realm','0')"
-            'SQLcommand_realmDB.ExecuteNonQuery()
 
             SQLcommand_realmDB.Dispose()
             SQLconnect_realmDB.Close()
 
             Console.WriteLine(". [done]")
 
-
-
-            'SQLconnect_realmDB.ConnectionString = "Data Source=database\realmDB.s3db; Version=3"
-            'SQLconnect_realmDB.Open()
-            'SQLcommand_realmDB = SQLconnect_realmDB.CreateCommand
-            'SQLcommand_realmDB.CommandText = "SELECT realm_name FROM realmlist where realm_id='1'"
-
-            'Dim SQLreader_realmDB As SQLiteDataReader = SQLcommand_realmDB.ExecuteReader()
-
-            'While SQLreader_realmDB.Read()
-            '    If SQLreader_realmDB(0).ToString <> "" Then Config.RealmName = SQLreader_realmDB(0).ToString
-            '    Console.Write(String.Format("realm_name= {0}", SQLreader_realmDB(0)))
-            '    'Console.Write(String.Format("realm_id= {0}, realm_name= {1}, gm_only= {2}", SQLreader_realmDB(0), SQLreader_realmDB(1), SQLreader_realmDB(2)))
-            '    Console.WriteLine("")
-            'End While
-
-            'SQLcommand_realmDB.Dispose()
-            'SQLconnect_realmDB.Close()
-
-
-
-
-
-
-            If Not File.Exists("database\characterDB.s3db") Then
-                Console.Write("[{0}] Default Character Database does not exist, creating", Format(TimeOfDay, "hh:mm:ss"))
-            Else
-                Console.Write("[{0}] Default Character Database found, checking default tables", Format(TimeOfDay, "hh:mm:ss"))
-            End If
-
-
-            Dim SQLconnect_characterDB As New SQLite.SQLiteConnection()
-            Dim SQLcommand_characterDB As SQLite.SQLiteCommand
-
-            SQLconnect_characterDB.ConnectionString = "Data Source=database\characterDB.s3db; Version=3"
-            SQLconnect_characterDB.Open()
-
-            SQLcommand_characterDB = SQLconnect_characterDB.CreateCommand
-
-            SQLcommand_characterDB.CommandText = "CREATE TABLE IF NOT EXISTS characters " & _
-            "(guid INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, account_id INTEGER NOT NULL, name VARCHAR(32) NOT NULL, race INTEGER NOT NULL, class INTEGER NOT NULL, gender INTEGER NOT NULL, skin INTEGER NOT NULL, face INTEGER NOT NULL, hairstyle INTEGER NOT NULL, haircolor INTEGER NOT NULL, facialhair INTEGER NOT NULL, level INTEGER NOT NULL DEFAULT 1, zone INTEGER NOT NULL DEFAULT 0, map INTEGER NOT NULL DEFAULT 0, x REAL NOT NULL DEFAULT 0, y REAL NOT NULL DEFAULT 0, z REAL NOT NULL DEFAULT 0, guildId INTEGER NOT NULL DEFAULT 0, petdisplayId INTEGER NOT NULL DEFAULT 0, petlevel INTEGER NOT NULL DEFAULT 0, petfamily INTEGER NOT NULL DEFAULT 0);"
-            SQLcommand_characterDB.ExecuteNonQuery()
-
-            Console.Write(".")
-
-            'SQLcommand_characterDB.CommandText = "insert into accounts (Fname,Uname,PWord) VALUES ('Admin','Admin','admin')"
-            'SQLcommand_characterDB.ExecuteNonQuery()
-
-            'SQLcommand_characterDB.CommandText = "CREATE TABLE IF NOT EXISTS ...);"
-            'SQLcommand_characterDB.ExecuteNonQuery()
-
-            Console.Write(".")
-
-            'SQLcommand_characterDB.CommandText = "insert into realmlist (realm_name,gm_only) VALUES ('Alpha Test Realm','0')"
-            'SQLcommand_characterDB.ExecuteNonQuery()
-
-            SQLcommand_characterDB.Dispose()
-            SQLconnect_characterDB.Close()
-
-            Console.WriteLine(". [done]")
-
-
-        Catch e As Exception
-            Console.WriteLine(e.ToString)
+        Catch ex As Exception
+            Console.WriteLine(ex.ToString)
         End Try
+      
     End Sub
+
 
 #End Region
 
@@ -355,6 +366,7 @@ Public Module Main
             Console.Write(".")
             Dim oStmR As StreamReader
             oStmR = New StreamReader(XMLFilePath)
+
             Config = oXS.Deserialize(oStmR)
             oStmR.Close()
 

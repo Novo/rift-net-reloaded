@@ -11,18 +11,21 @@
         FAILED                  'Processing Error
         CRITICAL                'Application Error
     End Enum
-    Public L() As Char = {"N", "D", "I", "U", "S", "W", "F", "C"}
 
     Public LogLevel As LogType = LogType.NETWORK
 
     Public Sub New()
     End Sub
+
     Public Overridable Sub Dispose() Implements System.IDisposable.Dispose
     End Sub
+
     Public Overridable Sub Write(ByVal type As LogType, ByVal format As String, ByVal ParamArray arg() As Object)
     End Sub
+
     Public Overridable Sub WriteLine(ByVal type As LogType, ByVal format As String, ByVal ParamArray arg() As Object)
     End Sub
+
     Public Overridable Function ReadLine() As String
         Return Console.ReadLine()
     End Function

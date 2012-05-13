@@ -12,30 +12,30 @@ Public Module WS_Handlers_Auth
         Dim PlayerGUID As ULong = 0
         PlayerGUID = packet.ReadUInt64() 'uint64 GUID
 
-        Console.WriteLine("[{0}] Player GUID: {1} try to enter world ...", Format(TimeOfDay, "hh:mm:ss"), PlayerGUID, Client.WSIP, Client.WSPort)
-
 
         'Temp: Send World Server down
-        Dim response As New PacketWriter(OpCodes.SMSG_CHARACTER_LOGIN_FAILED)
-        response.WriteInt8(AuthLoginCodes.CHAR_LOGIN_NO_WORLD)
-        Client.SendWorldClient(response)
+        Dim down As New PacketWriter(OpCodes.SMSG_CHARACTER_LOGIN_FAILED)
+        down.WriteUInt8(AuthLoginCodes.CHAR_LOGIN_NO_WORLD)
+        Client.SendWorldClient(down)
         Console.WriteLine("[{0}] Unable to login: WORLD SERVER DOWN", Format(TimeOfDay, "hh:mm:ss"), Client.WSIP, Client.WSPort)
-        'Temp: Send World Server down
+        Exit Sub
+        '----------------------------
 
 
-        'Dim CharacterObject As New WS_Handlers_Char.CharacterObject(PlayerGUID, Client)
+        Dim CharacterObject As New WS_Handlers_Char.CharacterObject(PlayerGUID, Client)
 
-        'Dim test As New PacketWriter(OpCodes.SMSG_UPDATE_OBJECT)
-        'test.WriteString(CharacterObject.Build_SMSG_UPDATE_OBJECT(PlayerGUID))
-        'Client.SendWorldClient(test)
+        Dim response As New PacketWriter(OpCodes.SMSG_UPDATE_OBJECT)
+        Client.SendWorldClient(CharacterObject.Build_SMSG_UPDATE_OBJECT(packet, response))
 
-        'Console.WriteLine("Successfully sent: SMSG_UPDATE_OBJECT")
+
+        Console.WriteLine("Successfully sent: SMSG_UPDATE_OBJECT")
+        Console.WriteLine("[{0}] Player GUID: {1} try to enter world ...", Format(TimeOfDay, "hh:mm:ss"), PlayerGUID, Client.WSIP, Client.WSPort)
 
 
 
         'ToDo:
         'Load Char Data
-        'SendData SMSG_UPDATE_OBJECT(BuildClientA9(Index, aSession(Index).GetGUID))
+        'Send SMSG_UPDATE_OBJECT(BuildClientA9(Index, aSession(Index).GetGUID))
 
     End Sub
 
@@ -91,22 +91,22 @@ Public Module WS_Handlers_Auth
 
         Dim Count As Integer = result.Rows.Count
         For i As Integer = 0 To Count - 1
-            If result.Rows(i).ItemArray(0).ToString() = name Then
+            If result.Rows(i).ItemArray(0).ToString() = name Then 'if name already in Database:
+                CharDB.DisposeDatabaseConnection() 'close Database
                 response.WriteUInt8(CharCreateResponseCodes.NAME_ALREADY_TAKEN)
-                Return response
-                Exit Function
+                Return response 'send response to client
+                Exit Function 'exit this function
             End If
         Next
 
+        'if name is not in Database:
         CharDB.Execute("INSERT INTO characters (name, account_id, race, class, gender, skin, face, hairstyle, haircolor, facialhair) VALUES (" & _
                        "'{0}', 1, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8})", name, race, pClass, gender, skin, face, hairStyle, hairColor, facialHair)
 
         CharDB.DisposeDatabaseConnection()
 
-        ' Success
         response.WriteUInt8(CharCreateResponseCodes.SUCCESS)
         Return response
-
     End Function
 
 
@@ -194,15 +194,18 @@ Public Module WS_Handlers_Auth
 
         Console.WriteLine("[{0}] << CMSG_AUTH_SESSION", Format(TimeOfDay, "hh:mm:ss"), Client.WSIP, Client.WSPort)
 
+        Dim crypt As New Crypt
         Dim clientVersion As Integer = packet.ReadInt32
         Dim clientSesionID As Integer = packet.ReadInt32
         Dim clientAccount As String = packet.ReadAccountName
         Dim clientPassword As String = packet.ReadString
 
+
         'Start Sending Auth ...
-        Dim responseAuth As New PacketWriter(OpCodes.SMSG_AUTH_RESPONSE)
-        responseAuth.WriteInt8(AuthResponseCodes.AUTH)
-        Client.SendWorldClient(responseAuth)
+        ' Dim responseAuth As New PacketWriter(OpCodes.SMSG_AUTH_RESPONSE)
+        ' responseAuth.WriteUInt8(AuthResponseCodes.AUTH)
+        ' Client.SendWorldClient(responseAuth)
+
 
         Dim response As New PacketWriter(OpCodes.SMSG_AUTH_RESPONSE)
 
@@ -210,26 +213,30 @@ Public Module WS_Handlers_Auth
         If Not clientVersion = 3368 Then 'HardCoded needed WoW Build
             Console.WriteLine("Account: " & clientAccount & " has attempted to log in with wrong Client build " & clientVersion)
 
-            response.WriteInt8(AuthResponseCodes.WRONG_CLIENT) '6 - Wrong Client Version
+            response.WriteUInt8(AuthResponseCodes.WRONG_CLIENT)
             Client.SendWorldClient(response)
             Console.WriteLine("Successfully sent: SMSG_AUTH_RESPONSE")
             Exit Sub
         End If
 
+
         'if account is already logged in, disconnected it and procede with new login...
         'ToDo
 
+
         'If wrong Password, close all
-        Dim AccountDB As New SQLiteBase("characterDB")
+        Dim realmDB As New SQLiteBase("realmDB")
 
         Try
-            Dim result As DataTable = AccountDB.Select("SELECT ...")
+            Dim result As DataTable = realmDB.Select("SELECT password FROM accounts WHERE username = '" & clientAccount & "'")
+            realmDB.DisposeDatabaseConnection()
 
             Dim Count As Integer = result.Rows.Count
+
             For i As Integer = 0 To Count - 1
 
-                If result.Rows(i).ItemArray(0).ToString() = clientPassword Then
-                    response.WriteInt8(AuthResponseCodes.AUTH_OK)
+                If result.Rows(i).ItemArray(0).ToString = clientPassword Then
+                    response.WriteUInt8(AuthResponseCodes.AUTH_OK)
                     Client.SendWorldClient(response)
 
                     Console.WriteLine("Successfully sent: SMSG_AUTH_RESPONSE")
@@ -237,13 +244,54 @@ Public Module WS_Handlers_Auth
                     Exit Sub
                 Else
                     If Config.AutoCreate Then
-                        'create account
-                        'AccountDB.Execute("INSERT INTO accounts...")
-                        'send success
 
+
+                        'Try
+                        '    Dim crypt As New Crypt
+                        '    Dim RealmDB As New SQLiteBase("realmDB")
+                        '    Dim result As DataTable = RealmDB.Select("SELECT username from accounts")
+                        '    Dim alreadyexist As Boolean = False
+                        '    Dim success As Boolean = False
+
+                        '    Dim Count As Integer = result.Rows.Count
+
+                        '    For i As Integer = 0 To Count - 1
+                        '        If result.Rows(i).ItemArray(0).ToString() = cmds(1) Then 'if username is already in Database:
+                        '            alreadyexist = True
+                        '            RealmDB.DisposeDatabaseConnection()
+                        '            Console.WriteLine("[{0}] Account already exist!", Format(TimeOfDay, "hh:mm:ss"))
+                        '            Exit For
+                        '        End If
+                        '    Next
+
+                        '    If Not alreadyexist Then
+                        '        success = RealmDB.Execute("INSERT INTO accounts (username, password) VALUES (" & _
+                        '                       "'{0}', '{1}')", cmds(2).ToUpper, crypt.getMd5Hash(cmds(3)))
+                        '        RealmDB.DisposeDatabaseConnection()
+
+                        '        If success Then
+                        '            Console.WriteLine("[{0}] Account " & cmds(2) & " successfully created!", Format(TimeOfDay, "hh:mm:ss"))
+                        '        Else
+                        '            Console.WriteLine("[{0}] Account Creation FAILED!", Format(TimeOfDay, "hh:mm:ss"))
+                        '        End If
+
+
+                        '    End If
+
+                        'Catch ex As Exception
+                        '    Console.WriteLine("[{0}] Account Creation FAILED!", Format(TimeOfDay, "hh:mm:ss"))
+                        'End Try
+
+                        response.WriteUInt8(AuthResponseCodes.AUTH_OK)
+                        Client.SendWorldClient(response)
+
+                        Console.WriteLine("Successfully sent: SMSG_AUTH_RESPONSE")
+                        Console.WriteLine("Account: " & clientAccount & " logged in.")
                         Exit Sub
                     Else
-                        response.WriteInt8(AuthResponseCodes.AUTH_FAILED)
+                        realmDB.DisposeDatabaseConnection()
+                        response.WriteUInt8(AuthResponseCodes.AUTH_FAILED)
+                        Client.SendWorldClient(response)
 
                         Console.WriteLine("Successfully sent: SMSG_AUTH_RESPONSE")
                         Console.WriteLine("Account: " & clientAccount & " tried to login with wrong password.")
@@ -254,13 +302,13 @@ Public Module WS_Handlers_Auth
 
             Next
 
-            AccountDB.DisposeDatabaseConnection()
-            response.WriteInt8(AuthResponseCodes.AUTH_FAILED)
+            realmDB.DisposeDatabaseConnection()
+            response.WriteUInt8(AuthResponseCodes.AUTH_FAILED)
             Client.SendWorldClient(response)
 
         Catch ex As Exception
-            AccountDB.DisposeDatabaseConnection()
-            response.WriteInt8(AuthResponseCodes.AUTH_FAILED)
+            realmDB.DisposeDatabaseConnection()
+            response.WriteUInt8(AuthResponseCodes.AUTH_FAILED)
             Client.SendWorldClient(response)
         End Try
 
