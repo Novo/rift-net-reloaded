@@ -7,6 +7,7 @@ Imports System.Data.SQLite
 Public Module Main
     Private _flagStopListen As Boolean = False
 
+
     Sub Main()
         Dim dateTimeStarted As Date = Now
 
@@ -249,7 +250,7 @@ Public Module Main
             SQLcommand_characterDB = SQLconnect_characterDB.CreateCommand
 
             SQLcommand_characterDB.CommandText = "CREATE TABLE IF NOT EXISTS characters " & _
-            "(guid INTEGER DEFAULT 1 NOT NULL PRIMARY KEY AUTOINCREMENT, account_id INTEGER NOT NULL, name VARCHAR(32) NOT NULL, race INTEGER NOT NULL, class INTEGER NOT NULL, gender INTEGER NOT NULL, skin INTEGER NOT NULL, face INTEGER NOT NULL, hairstyle INTEGER NOT NULL, haircolor INTEGER NOT NULL, facialhair INTEGER NOT NULL, level INTEGER NOT NULL DEFAULT 1, zone INTEGER NOT NULL DEFAULT 0, map INTEGER NOT NULL DEFAULT 0, x REAL NOT NULL DEFAULT 0, y REAL NOT NULL DEFAULT 0, z REAL NOT NULL DEFAULT 0, guildId INTEGER NOT NULL DEFAULT 0, petdisplayId INTEGER NOT NULL DEFAULT 0, petlevel INTEGER NOT NULL DEFAULT 0, petfamily INTEGER NOT NULL DEFAULT 0);"
+            "(guid INTEGER DEFAULT 1 NOT NULL PRIMARY KEY AUTOINCREMENT, account_id INTEGER NOT NULL, name VARCHAR(32) NOT NULL, race INTEGER NOT NULL, class INTEGER NOT NULL, gender INTEGER NOT NULL, skin INTEGER NOT NULL, face INTEGER NOT NULL, hairstyle INTEGER NOT NULL, haircolor INTEGER NOT NULL, facialhair INTEGER NOT NULL, level INTEGER NOT NULL DEFAULT 1, zoneID INTEGER NOT NULL DEFAULT 0, mapID INTEGER NOT NULL DEFAULT 0, x REAL NOT NULL DEFAULT 0, y REAL NOT NULL DEFAULT 0, z REAL NOT NULL DEFAULT 0, facing REAL NOT NULL DEFAULT 0, guildId INTEGER NOT NULL DEFAULT 0, petdisplayId INTEGER NOT NULL DEFAULT 0, petlevel INTEGER NOT NULL DEFAULT 0, petfamily INTEGER NOT NULL DEFAULT 0);"
             SQLcommand_characterDB.ExecuteNonQuery()
 
             Console.Write(".")
@@ -367,7 +368,7 @@ Public Module Main
             Dim oStmR As StreamReader
             oStmR = New StreamReader(XMLFilePath)
 
-            Config = oXS.Deserialize(oStmR)
+            Config = DirectCast(oXS.Deserialize(oStmR), XMLConfigFile)
             oStmR.Close()
 
             Console.WriteLine(". [done]")

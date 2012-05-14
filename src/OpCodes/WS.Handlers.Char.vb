@@ -3,22 +3,50 @@
     Class CharacterObject
         Implements IDisposable
 
-        Public GUID As ULong
         Public Client As WorldServerClass
 
+        Public Access As GlobalConstants.AccessLevel
         Public IsInWorld As Boolean = False
-        Public Map As UInteger
-        Public Zone As UInteger
+
+        Public GUID As ULong
+        Public Name As String
+
+        Public Race As GlobalConstants.Races
+        Public Classe As GlobalConstants.Classes
+        Public Gender As GlobalConstants.Genders
+        Public Skin As Byte '?
+        Public Face As Byte
+        Public HairStyle As Byte
+        Public HairColor As Byte
+        Public FacialHair As Byte
+
+        Public Level As UInteger = 1
+
+        Public ZoneID As UInteger
+        Public MapID As UInteger
         Public PositionX As Single
         Public PositionY As Single
         Public PositionZ As Single
+        Public Facing As Single
 
-        Public Access As GlobalConstants.AccessLevel
-        Public Name As String
-        Public Level As Integer
-        Public Race As GlobalConstants.Races
-        Public Classe As GlobalConstants.Classes
-        Public Gender As Byte
+        Public GuildGuid As UInteger
+        Public PetDisplayID As UInteger
+        Public PetLevel As UInteger
+        Public PetFamilyID As UInteger
+
+        Public Health As UInteger = 1
+        Public Mana As UInteger
+        Public Rage As UInteger
+        Public Focus As UInteger
+        Public Energy As UInteger
+        Public Strength As UInteger
+        Public Agility As UInteger
+        Public Stamina As UInteger
+        Public Intellect As UInteger
+        Public Spirit As UInteger
+        Public Money As UInteger
+
+
         Public Time As Date = Now()
         Public Latency As Integer = 0
 
@@ -26,9 +54,9 @@
         Public JoinedChannels As New List(Of String)
 
 
-        Public Sub New(ByVal PlayerGUID As ULong, ByRef WorldServerClass As WorldServerClass)
-            Me.Client = WorldServerClass
-            Me.GUID = PlayerGUID
+        Public Sub New()
+            'Me.Client = WorldServerClass
+            'Me.GUID = PlayerGUID
         End Sub
 
         Public Sub Dispose() Implements IDisposable.Dispose
@@ -42,12 +70,6 @@
         Public Sub OnLogout()
             '
         End Sub
-
-
-        Public Function Build_SMSG_UPDATE_OBJECT(ByRef packet As PacketReader, ByRef response As PacketWriter) As PacketWriter
-
-            Return response
-        End Function
 
 
     End Class

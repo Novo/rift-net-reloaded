@@ -43,7 +43,6 @@
             RACE_TAUREN = 6
             RACE_GNOME = 7
             RACE_TROLL = 8
-            RACE_GOBLIN = 9
         End Enum
 
 #End Region

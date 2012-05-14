@@ -5,6 +5,7 @@ Public Module Packets
 
     Public Class PacketReader
         Inherits BinaryReader
+        Implements IDisposable
 
         Private m_opcode As OpCodes
         Private m_size As UShort
@@ -35,9 +36,10 @@ Public Module Packets
             ' Packet header (0.5.3.3368): Size: 2 bytes + Cmd: 4 bytes
             If worldPacket Then
                 Me.Size = CUShort((Me.ReadUInt16() \ &H100) - 4)
-                Me.Opcode = Me.ReadUInt32
+                Me.Opcode = DirectCast(Me.ReadUInt32, OpCodes)
             End If
         End Sub
+
 
         Public Function ReadInt8() As SByte
             Return MyBase.ReadSByte()
@@ -113,6 +115,8 @@ Public Module Packets
         Public Sub SkipBytes(ByVal count As Integer)
             MyBase.BaseStream.Position += count
         End Sub
+
+
 
     End Class
 

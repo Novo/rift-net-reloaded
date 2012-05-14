@@ -6,14 +6,14 @@ Imports System.Text
 Public Module WS_Main
     Public WS As WorldServerClass
     Public Log As New BaseWriter
-    Public PacketHandlers As New Hashtable
+    Public PacketHandlers As New Dictionary(Of OpCodes, HandlePacket)
     Delegate Sub HandlePacket(ByRef Packet As PacketReader, ByRef Client As WorldServerClass)
 
 
     Class WorldServerClass
         Implements IDisposable
 
-        Public Character As CharacterObject = Nothing
+        Public Character As New WS_Handlers_Char.CharacterObject
 
         Public _flagStopListen As Boolean = False
         Private WorldServerSocket As Socket = Nothing
@@ -152,21 +152,26 @@ Public Module WS_Main
 
         Public Sub OnWorldData(ByVal data() As Byte)
             Dim PacketBuffer As New PacketReader(data)
-            
+
             Try
+
                 If [Enum].IsDefined(GetType(OpCodes), PacketBuffer.Opcode) Then
                     Console.WriteLine("Recieved OpCode: {0}, Length: {1}", PacketBuffer.Opcode, PacketBuffer.Size)
-                    PacketHandlers(PacketBuffer.Opcode).Invoke(PacketBuffer, Me)
+
+                    If PacketHandlers.ContainsKey(PacketBuffer.Opcode) = True Then
+                        PacketHandlers(PacketBuffer.Opcode).Invoke(PacketBuffer, Me)
+                    End If
+
                 Else
                     Console.WriteLine("Received unknown OpCode: {0}, Length: {1}", PacketBuffer.Opcode, PacketBuffer.Size)
                 End If
 
+
                 Dim PacketLogger As New PacketLog
                 PacketLogger.DumpPacket(data, "<<")
 
-
             Catch ex As Exception
-                Console.WriteLine("World Connection from [{0}:{1}] caused an error {2}{3}", WSIP, WSPort, Err.ToString, vbNewLine)
+                Console.WriteLine("World Connection from [{0}:{1}] caused an error {2}{3}", WSIP, WSPort, ex.ToString, vbNewLine)
                 Console.WriteLine("Opcode Handler {2}:{3} caused an error:{1}{0}", ex.Message, vbNewLine, PacketBuffer.Opcode, CType(PacketBuffer.Opcode, OpCodes))
             End Try
 
