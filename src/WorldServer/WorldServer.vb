@@ -9,23 +9,22 @@ Public Module WS_Main
     Public PacketHandlers As New Dictionary(Of OpCodes, HandlePacket)
     Delegate Sub HandlePacket(ByRef Packet As PacketReader, ByRef Client As WorldServerClass)
 
-
     Class WorldServerClass
         Implements IDisposable
 
-        Public Character As New WS_Handlers_Char.CharacterObject
-
-        Public _flagStopListen As Boolean = False
+		Public _flagStopListen As Boolean = False
+        Public Character As CharacterObject = Nothing
         Private WorldServerSocket As Socket = Nothing
+        Private ConnectionWorld As TcpListener = Nothing
         Public WSIP As Net.IPAddress = Net.IPAddress.Parse("0.0.0.0")
-        Public WSPort As Int32 = 8086
-        Private lstHostWorld As Net.IPAddress = Net.IPAddress.Parse("127.0.0.1")
-        Private ConnectionWorld As TcpListener
+        Public WSPort As Int32 = Config.WSPort
+        Private lstHostWorld As Net.IPAddress = Net.IPAddress.Parse(Config.WSHost)
+
 
 
         Public Sub Start()
-            Console.WriteLine("[{0}] World Server Starting...", Format(TimeOfDay, "hh:mm:ss"))
-            Dim lstHostWorld As Net.IPAddress = Net.IPAddress.Parse("127.0.0.1")
+            Console.WriteLine("[{0}] World Server Starting...", Format(TimeOfDay, "HH:mm:ss"))
+
             Try
                 ConnectionWorld = New TcpListener(lstHostWorld, WSPort)
                 ConnectionWorld.Start()
@@ -35,11 +34,11 @@ Public Module WS_Main
                 WSListenThread.Name = "World Server Listening"
                 WSListenThread.Start()
 
-                Console.WriteLine("[{0}] World Server Listening on {1} on port {2}", Format(TimeOfDay, "hh:mm:ss"), lstHostWorld, WSPort)
+                Console.WriteLine("[{0}] World Server Listening on {1} on port {2}", Format(TimeOfDay, "HH:mm:ss"), lstHostWorld, WSPort)
             Catch e As Exception
                 Console.WriteLine()
                 Console.ForegroundColor = System.ConsoleColor.Red
-                Console.WriteLine("[{0}] Error in {2}: {1}.", Format(TimeOfDay, "hh:mm:ss"), e.Message, e.Source)
+                Console.WriteLine("[{0}] Error in {2}: {1}.", Format(TimeOfDay, "HH:mm:ss"), e.Message, e.Source)
                 Console.ForegroundColor = System.ConsoleColor.Gray
             End Try
         End Sub
@@ -49,7 +48,10 @@ Public Module WS_Main
             Do While Not _flagStopListen
                 Thread.Sleep(100)
                 If ConnectionWorld.Pending() Then
-                    Dim WorldClient As New WorldServerClass
+
+                    Dim WorldClient As New WorldServerClass 'Create a new World for every new Connection
+                    WorldClient.Character = New CharacterObject(WorldClient) 'Create a new CharacterObject for every new World
+
                     WorldClient.WorldServerSocket = ConnectionWorld.AcceptSocket
 
                     Dim NewThread As New Thread(AddressOf WorldClient.ProcessWorld)
@@ -67,7 +69,7 @@ Public Module WS_Main
             Dim bytes As Integer
 
             Console.ForegroundColor = System.ConsoleColor.DarkGray
-            Console.WriteLine("[{0}] New incoming World connection from [{1}:{2}]", Format(TimeOfDay, "hh:mm:ss"), WSIP, WSPort)
+            Console.WriteLine("[{0}] New incoming World connection from [{1}:{2}]", Format(TimeOfDay, "HH:mm:ss"), WSIP, WSPort)
             Console.ForegroundColor = System.ConsoleColor.Gray
 
 
@@ -79,8 +81,6 @@ Public Module WS_Main
             response.WriteUInt8(&H0)
             response.WriteUInt8(&H0)
             SendWorldClient(response)
-
-            Console.WriteLine("Successfully sent: SMSG_AUTH_CHALLENGE")
 
 
             While Not _flagStopListen
@@ -98,8 +98,10 @@ Public Module WS_Main
             WorldServerSocket.Close()
 
 
+
+
             Console.ForegroundColor = System.ConsoleColor.DarkGray
-            Console.WriteLine("[{0}] World Connection from [{1}:{2}] closed", Format(TimeOfDay, "hh:mm:ss"), WSIP, WSPort)
+            Console.WriteLine("[{0}] World Connection from [{1}:{2}] closed", Format(TimeOfDay, "HH:mm:ss"), WSIP, WSPort)
             Console.ForegroundColor = System.ConsoleColor.Gray
         End Sub
 
@@ -120,12 +122,13 @@ Public Module WS_Main
                     'Send Data async
                     WorldServerSocket.BeginSend(buffer, 0, buffer.Length, SocketFlags.None, New AsyncCallback(AddressOf AsyncSendWorldClientCallback), WorldServerSocket)
 
+                    Console.WriteLine("[{0}] [{1}:{2}] >> OpCode {3}({4}), Length:{5}", Format(TimeOfDay, "HH:mm:ss"), WSIP, WSPort, packet.Opcode.ToString, Val(packet.Opcode).ToString, packet.Size.ToString)
 
                     Dim PacketLogger As New PacketLog
                     PacketLogger.DumpPacket(buffer, ">>")
 
                 Catch ex As Exception
-                    Console.WriteLine("World Connection from [{0}:{1}] cause error {3}", WSIP, WSPort, ex.ToString & Environment.NewLine)
+                    Console.WriteLine("[{0}] [{1}:{2}] World Connection cause error {3}", Format(TimeOfDay, "HH:mm:ss"), WSIP, WSPort, ex.ToString & Environment.NewLine)
                 End Try
 
             End SyncLock
@@ -141,10 +144,9 @@ Public Module WS_Main
                 'WorldServerSocket.Close()
                 'Me.DisposeWorld()
 
-                Console.WriteLine("[{0}:{1}] World Data sent {2} bytes", WSIP, WSPort, bytesSent)
-
+                Console.WriteLine("[{0}] [{1}:{2}] World Data sent {3} bytes", Format(TimeOfDay, "HH:mm:ss"), WSIP, WSPort, bytesSent)
             Catch socketException As SocketException
-                Console.WriteLine("World Connection from [{0}:{1}] cause error {3}", WSIP, WSPort, socketException.Message.ToString & Environment.NewLine)
+                Console.WriteLine("[{0}] [{1}:{2}] World Connection cause error {3}", Format(TimeOfDay, "HH:mm:ss"), WSIP, WSPort, socketException.ToString & Environment.NewLine)
             End Try
 
         End Sub
@@ -156,14 +158,14 @@ Public Module WS_Main
             Try
 
                 If [Enum].IsDefined(GetType(OpCodes), PacketBuffer.Opcode) Then
-                    Console.WriteLine("Recieved OpCode: {0}, Length: {1}", PacketBuffer.Opcode, PacketBuffer.Size)
+                    Console.WriteLine("[{0}] [{1}:{2}] << OpCode: {3}({4}), Length:{5}", Format(TimeOfDay, "HH:mm:ss"), WSIP, WSPort, PacketBuffer.Opcode, Val(PacketBuffer.Opcode).ToString, PacketBuffer.Size.ToString)
 
                     If PacketHandlers.ContainsKey(PacketBuffer.Opcode) = True Then
                         PacketHandlers(PacketBuffer.Opcode).Invoke(PacketBuffer, Me)
                     End If
 
                 Else
-                    Console.WriteLine("Received unknown OpCode: {0}, Length: {1}", PacketBuffer.Opcode, PacketBuffer.Size)
+                    Console.WriteLine("[{0}] [{1}:{2}] << Unknown OpCode: {3}, Length:{4}", Format(TimeOfDay, "HH:mm:ss"), WSIP, WSPort, PacketBuffer.Opcode, PacketBuffer.Size)
                 End If
 
 
@@ -171,8 +173,7 @@ Public Module WS_Main
                 PacketLogger.DumpPacket(data, "<<")
 
             Catch ex As Exception
-                Console.WriteLine("World Connection from [{0}:{1}] caused an error {2}{3}", WSIP, WSPort, ex.ToString, vbNewLine)
-                Console.WriteLine("Opcode Handler {2}:{3} caused an error:{1}{0}", ex.Message, vbNewLine, PacketBuffer.Opcode, CType(PacketBuffer.Opcode, OpCodes))
+                Console.WriteLine("[{0}] [{1}:{2}] World Connection cause error {3}, {4}", Format(TimeOfDay, "HH:mm:ss"), WSIP, WSPort, PacketBuffer.Opcode, Environment.NewLine & ex.ToString)
             End Try
 
         End Sub
@@ -180,7 +181,7 @@ Public Module WS_Main
 
         Public Sub DisposeWorld() Implements System.IDisposable.Dispose
             Console.ForegroundColor = System.ConsoleColor.DarkGray
-            Console.WriteLine("[{0}] World Connection from [{1}:{2}] deleted", Format(TimeOfDay, "hh:mm:ss"), WSIP, WSPort)
+            Console.WriteLine("[{0}] World Connection from [{1}:{2}] deleted", Format(TimeOfDay, "HH:mm:ss"), WSIP, WSPort)
             Console.ForegroundColor = System.ConsoleColor.Gray
         End Sub
 

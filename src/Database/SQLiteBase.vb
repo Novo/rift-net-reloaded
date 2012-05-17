@@ -29,7 +29,7 @@ Public Class SQLiteBase
         Try
             Connection.Open()
         Catch ex As SQLiteException
-            'Log.Message(LogType.[ERROR], "{0}", ex.Message)
+            Console.WriteLine(ex.ToString)
         End Try
     End Sub
 
@@ -39,7 +39,7 @@ Public Class SQLiteBase
             SqlData.Close()
             Connection.Close()
         Catch ex As Exception
-
+            '
         End Try
     End Sub
 
@@ -54,7 +54,7 @@ Public Class SQLiteBase
             sqlCommand.ExecuteNonQuery()
             Return True
         Catch ex As SQLiteException
-            'Log.Message(LogType.[ERROR], "{0}", ex.Message)
+            Console.WriteLine(ex.ToString)
             Return False
         End Try
 
@@ -70,7 +70,7 @@ Public Class SQLiteBase
             retData.Load(SqlData)
 
         Catch ex As SQLiteException
-            'Log.Message(LogType.[ERROR], "{0}", ex.Message)
+            Console.WriteLine(ex.ToString)
         End Try
 
         Return retData

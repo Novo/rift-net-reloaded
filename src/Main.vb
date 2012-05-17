@@ -5,9 +5,7 @@ Imports System.Data
 Imports System.Data.SQLite
 
 Public Module Main
-    Private _flagStopListen As Boolean = False
-
-
+    
     Sub Main()
         Dim dateTimeStarted As Date = Now
 
@@ -38,6 +36,12 @@ Public Module Main
 
         'Load Configuration File
         LoadConfigFile()
+
+
+        'Creating logger
+        BaseWriter.CreateLog(Config.LogType, Config.LogConfig, Log)
+        Log.LogLevel = Config.LogLevel
+
 
         InitializeDatabases()
 
@@ -78,7 +82,8 @@ Public Module Main
         Dim cmd() As String = {}
         Dim varList As Integer
 
-        While Not _flagStopListen
+        While True
+
             Try
                 Console.Write("Rift>")
                 tmp = Console.ReadLine()
@@ -110,7 +115,7 @@ Public Module Main
                                                         If result.Rows(i).ItemArray(0).ToString() = cmds(1) Then 'if username is already in Database:
                                                             alreadyexist = True
                                                             RealmDB.DisposeDatabaseConnection()
-                                                            Console.WriteLine("[{0}] Account already exist!", Format(TimeOfDay, "hh:mm:ss"))
+                                                            Console.WriteLine("[{0}] Account already exist!", Format(TimeOfDay, "HH:mm:ss"))
                                                             Exit For
                                                         End If
                                                     Next
@@ -121,16 +126,16 @@ Public Module Main
                                                         RealmDB.DisposeDatabaseConnection()
 
                                                         If success Then
-                                                            Console.WriteLine("[{0}] Account " & cmds(2) & " successfully created!", Format(TimeOfDay, "hh:mm:ss"))
+                                                            Console.WriteLine("[{0}] Account " & cmds(2) & " successfully created!", Format(TimeOfDay, "HH:mm:ss"))
                                                         Else
-                                                            Console.WriteLine("[{0}] Account Creation FAILED!", Format(TimeOfDay, "hh:mm:ss"))
+                                                            Console.WriteLine("[{0}] Account Creation FAILED!", Format(TimeOfDay, "HH:mm:ss"))
                                                         End If
 
 
                                                     End If
 
                                                 Catch ex As Exception
-                                                    Console.WriteLine("[{0}] Account Creation FAILED!", Format(TimeOfDay, "hh:mm:ss"))
+                                                    Console.WriteLine("[{0}] Account Creation FAILED!", Format(TimeOfDay, "HH:mm:ss"))
                                                 End Try
 
 
@@ -152,7 +157,7 @@ Public Module Main
                                                 SQLcommand.CommandText = "insert into realmlist (realm_name) VALUES ('" & cmds(2) & "')"
                                                 SQLcommand.ExecuteNonQuery()
 
-                                                Console.WriteLine("[{0}] Realm " & cmds(2) & " successfully created!", Format(TimeOfDay, "hh:mm:ss"))
+                                                Console.WriteLine("[{0}] Realm " & cmds(2) & " successfully created!", Format(TimeOfDay, "HH:mm:ss"))
                                             Else
                                                 Console.WriteLine("'create' commands are: create realm [realmname]")
                                             End If
@@ -170,18 +175,19 @@ Public Module Main
 
                             Case "quit", "shutdown", "exit"
                                 Console.WriteLine("Server shutting down...")
-                                _flagStopListen = True
                                 RS._flagStopListen = True
                                 MS._flagStopListen = True
                                 WS._flagStopListen = True
                                 RS.DisposeRealm()
                                 MS.DisposeMiddleMan()
                                 WS.DisposeWorld()
+
                                 'ToDo: kick current Socket connections
 
                             Case "gccollect"
+                                Console.WriteLine("Used memory before: {0}", Format(GC.GetTotalMemory(False), "### ### ##0 bytes"))
                                 GC.Collect()
-
+                                Console.WriteLine("Used memory after: {0}", Format(GC.GetTotalMemory(False), "### ### ##0 bytes"))
 
                             Case "info"
                                 Console.WriteLine("Used memory: {0}", Format(GC.GetTotalMemory(False), "### ### ##0 bytes"))
@@ -217,8 +223,9 @@ Public Module Main
                 Next
 
             Catch ex As Exception
-                Console.WriteLine("Error executing command [{0}]. {2}{1}", Format(TimeOfDay, "hh:mm:ss"), tmp, ex.ToString, vbNewLine)
+                Console.WriteLine("Error executing command [{0}]. {2}{1}", Format(TimeOfDay, "HH:mm:ss"), tmp, ex.ToString, vbNewLine)
             End Try
+
         End While
     End Sub
 
@@ -233,9 +240,9 @@ Public Module Main
         Try
 
             If Not File.Exists("database\characterDB.s3db") Then
-                Console.Write("[{0}] Default Character Database does not exist, creating", Format(TimeOfDay, "hh:mm:ss"))
+                Console.Write("[{0}] Default Character Database does not exist, creating", Format(TimeOfDay, "HH:mm:ss"))
             Else
-                Console.Write("[{0}] Default Character Database found, checking default tables", Format(TimeOfDay, "hh:mm:ss"))
+                Console.Write("[{0}] Default Character Database found, checking default tables", Format(TimeOfDay, "HH:mm:ss"))
             End If
 
 
@@ -270,9 +277,9 @@ Public Module Main
         Try
 
             If Not File.Exists("database\realmDB.s3db") Then
-                Console.Write("[{0}] Default Realm Database does not exist, creating", Format(TimeOfDay, "hh:mm:ss"))
+                Console.Write("[{0}] Default Realm Database does not exist, creating", Format(TimeOfDay, "HH:mm:ss"))
             Else
-                Console.Write("[{0}] Default Realm Database found, checking default tables", Format(TimeOfDay, "hh:mm:ss"))
+                Console.Write("[{0}] Default Realm Database found, checking default tables", Format(TimeOfDay, "HH:mm:ss"))
             End If
 
 
@@ -303,7 +310,7 @@ Public Module Main
         Catch ex As Exception
             Console.WriteLine(ex.ToString)
         End Try
-      
+
     End Sub
 
 
@@ -374,12 +381,8 @@ Public Module Main
             Console.WriteLine(". [done]")
 
 
-            'Creating logger
-            BaseWriter.CreateLog(Config.LogType, Config.LogConfig, Log)
-            Log.LogLevel = Config.LogLevel
-
-        Catch e As Exception
-            Console.WriteLine(e.ToString)
+        Catch ex As Exception
+            Console.WriteLine(ex.ToString)
         End Try
     End Sub
 

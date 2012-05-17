@@ -12,13 +12,12 @@ Public Module MS_Main
         Private MiddleManSocket As Socket = Nothing
         Private MMIP As Net.IPAddress = Net.IPAddress.Parse("0.0.0.0")
         Private MMPort As Int32 = Config.MMPort
-        Private lstHostMiddleMan As Net.IPAddress = Net.IPAddress.Parse(Config.MMHost)
         Private ConnectionMiddleMan As TcpListener
+        Private lstHostMiddleMan As Net.IPAddress = Net.IPAddress.Parse(Config.MMHost)
 
 
         Public Sub Start()
-            Console.WriteLine("[{0}] MiddleMan Server Starting...", Format(TimeOfDay, "hh:mm:ss"))
-            Dim lstHostMiddleMan As Net.IPAddress = Net.IPAddress.Parse("127.0.0.1")
+            Console.WriteLine("[{0}] MiddleMan Server Starting...", Format(TimeOfDay, "HH:mm:ss"))
             Try
                 ConnectionMiddleMan = New TcpListener(lstHostMiddleMan, MMPort)
                 ConnectionMiddleMan.Start()
@@ -28,11 +27,11 @@ Public Module MS_Main
                 MSListenThread.Name = "MiddleMan Server, Listening"
                 MSListenThread.Start()
 
-                Console.WriteLine("[{0}] MiddleMan Server Listening on {1} on port {2}", Format(TimeOfDay, "hh:mm:ss"), lstHostMiddleMan, MMPort)
+                Console.WriteLine("[{0}] MiddleMan Server Listening on {1} on port {2}", Format(TimeOfDay, "HH:mm:ss"), lstHostMiddleMan, MMPort)
             Catch e As Exception
                 Console.WriteLine()
                 Console.ForegroundColor = System.ConsoleColor.Red
-                Console.WriteLine("[{0}] Error in {2}: {1}.", Format(TimeOfDay, "hh:mm:ss"), e.Message, e.Source)
+                Console.WriteLine("[{0}] Error in {2}: {1}.", Format(TimeOfDay, "HH:mm:ss"), e.Message, e.Source)
                 Console.ForegroundColor = System.ConsoleColor.Gray
             End Try
         End Sub
@@ -57,7 +56,7 @@ Public Module MS_Main
             MMPort = CType(MiddleManSocket.RemoteEndPoint, IPEndPoint).Port
 
             Console.ForegroundColor = System.ConsoleColor.DarkGray
-            Console.WriteLine("[{0}] MiddleMan Incoming connection from [{1}:{2}]", Format(TimeOfDay, "hh:mm:ss"), MMIP, MMPort)
+            Console.WriteLine("[{0}] MiddleMan Incoming connection from [{1}:{2}]", Format(TimeOfDay, "HH:mm:ss"), MMIP, MMPort)
             Console.ForegroundColor = System.ConsoleColor.Gray
 
             Dim response As New PacketWriter()
@@ -89,7 +88,7 @@ Public Module MS_Main
 
                 Catch Err As Exception
                     Console.ForegroundColor = System.ConsoleColor.Red
-                    Console.WriteLine("[{0}] MiddleMan Connection from [{1}:{2}] do not exist - ERROR!!!", Format(TimeOfDay, "hh:mm:ss"), MMIP, MMPort)
+                    Console.WriteLine("[{0}] MiddleMan Connection from [{1}:{2}] do not exist - ERROR!!!", Format(TimeOfDay, "HH:mm:ss"), MMIP, MMPort)
                     Console.ForegroundColor = System.ConsoleColor.Gray
                     MiddleManSocket.Close()
                 End Try
@@ -111,7 +110,7 @@ Public Module MS_Main
                 MiddleManSocket.Close()
 
                 Console.ForegroundColor = System.ConsoleColor.DarkGray
-                Console.WriteLine("[{0}] MiddleMan Connection from [{1}:{2}] closed", Format(TimeOfDay, "hh:mm:ss"), MMIP, MMPort)
+                Console.WriteLine("[{0}] MiddleMan Connection from [{1}:{2}] closed", Format(TimeOfDay, "HH:mm:ss"), MMIP, MMPort)
                 Console.ForegroundColor = System.ConsoleColor.Gray
 
                 Me.DisposeMiddleMan()
@@ -124,12 +123,12 @@ Public Module MS_Main
 
 
         Public Sub OnMiddleManData(ByVal data() As Byte)
-            'not used in Alpha ...
+            'not used, just a redirection ...
             Select Case data(0)
 
                 Case Else
                     Console.ForegroundColor = System.ConsoleColor.Red
-                    Console.WriteLine("[{0}] [{1}:{2}] Unknown MiddleMan Opcode 0x{3}", Format(TimeOfDay, "hh:mm:ss"), MMIP, MMPort, data(0))
+                    Console.WriteLine("[{0}] [{1}:{2}] Unknown MiddleMan Opcode 0x{3}", Format(TimeOfDay, "HH:mm:ss"), MMIP, MMPort, data(0))
                     Console.ForegroundColor = System.ConsoleColor.Gray
             End Select
         End Sub
@@ -137,7 +136,7 @@ Public Module MS_Main
 
         Public Sub DisposeMiddleMan() Implements System.IDisposable.Dispose
             Console.ForegroundColor = System.ConsoleColor.DarkGray
-            Console.WriteLine("[{0}] MiddleMan Connection from [{1}:{2}] deleted", Format(TimeOfDay, "hh:mm:ss"), MMIP, MMPort)
+            Console.WriteLine("[{0}] MiddleMan Connection from [{1}:{2}] deleted", Format(TimeOfDay, "HH:mm:ss"), MMIP, MMPort)
             Console.ForegroundColor = System.ConsoleColor.Gray
         End Sub
 

@@ -1,11 +1,54 @@
 ﻿Imports System.Data
-Imports System.Data.SQLite
 
 Public Module WS_Handlers_Auth
 
+    Public Sub On_CMSG_WORLD_TELEPORT(ByRef packet As PacketReader, ByRef Client As WorldServerClass)
+        packet.ReadUInt32() 'dunno what this is
+        Dim zone As Byte = packet.ReadUInt8()
+        Dim x As Single = packet.ReadFloat()
+        Dim y As Single = packet.ReadFloat()
+        Dim z As Single = packet.ReadFloat()
+        Dim o As Single = packet.ReadFloat()
+
+        Dim movementStatus As New PacketWriter(OpCodes.SMSG_MOVE_WORLDPORT_ACK)
+        movementStatus.WriteUInt64(0)
+        movementStatus.WriteSingle(0)
+        movementStatus.WriteSingle(0)
+        movementStatus.WriteSingle(0)
+        movementStatus.WriteSingle(0)
+        movementStatus.WriteSingle(x)
+        movementStatus.WriteSingle(y)
+        movementStatus.WriteSingle(z)
+        movementStatus.WriteSingle(o)
+        movementStatus.WriteSingle(0)
+        movementStatus.WriteUInt32(&H8000000)
+        Client.SendWorldClient(movementStatus)
+    End Sub
+
+
+    Public Sub On_MSG_MOVE_WORLDPORT_ACK(ByRef packet As PacketReader, ByRef Client As WorldServerClass)
+        '
+    End Sub
+
+
+    Public Sub On_CMSG_CANCEL_TRADE(ByRef packet As PacketReader, ByRef Client As WorldServerClass)
+        Dim response As New PacketWriter(OpCodes.SMSG_TRADE_STATUS)
+        response.WriteUInt32(TradeStatus.TRADE_STATUS_CANCELLED)
+
+        Client.SendWorldClient(response)
+    End Sub
+
+
+    Public Sub On_CMSG_QUERY_TIME(ByRef packet As PacketReader, ByRef Client As WorldServerClass)
+        Dim response As New PacketWriter(OpCodes.SMSG_QUERY_TIME_RESPONSE)
+        response.WriteInt32(System.Environment.TickCount) 'this is not correct?
+
+        Client.SendWorldClient(response)
+    End Sub
+
 
     Public Sub On_HandleMovementStatus(ByRef packet As PacketReader, ByRef Client As WorldServerClass)
-
+        'Read MovementStatus
         Dim MoveMessage As OpCodes = packet.Opcode
 
         Dim TransportGuid As UInt64 = packet.ReadUInt64()
@@ -20,7 +63,7 @@ Public Module WS_Handlers_Auth
         Dim Pitch As Single = packet.ReadFloat()
         Dim Flags As UInt32 = packet.ReadUInt32()
 
-
+        'Send MovementStatus
         Dim movementStatus As New PacketWriter(MoveMessage)
 
         movementStatus.WriteUInt64(TransportGuid)
@@ -37,10 +80,11 @@ Public Module WS_Handlers_Auth
 
         Client.SendWorldClient(movementStatus)
 
-        WS.Character.PositionX = X
-        WS.Character.PositionY = Y
-        WS.Character.PositionZ = Z
-        WS.Character.Facing = O
+        'Save MovementStatus
+        Client.Character.PositionX = X
+        Client.Character.PositionY = Y
+        Client.Character.PositionZ = Z
+        Client.Character.Facing = O
 
 
         'ToDo: Save in DB every x seconds
@@ -48,104 +92,74 @@ Public Module WS_Handlers_Auth
 
 
     Public Sub On_CMSG_MESSAGECHAT(ByRef packet As PacketReader, ByRef Client As WorldServerClass)
-        Console.WriteLine("[{0}] << CMSG_MESSAGECHAT", Format(TimeOfDay, "hh:mm:ss"), Client.WSIP, Client.WSPort)
-
         Dim response As New PacketWriter(OpCodes.SMSG_MESSAGECHAT)
-        response.WriteUInt8(9)     ' slashCmd, 9: SystemMessage
-        response.WriteUInt32(0)    ' Language: General
+        response.WriteUInt8(CByte(packet.ReadInt32)) ' slashCmd, 9: SystemMessage
+        response.WriteUInt32(packet.ReadUInt32)      ' Language: General
         response.WriteUInt64(0)    ' Guid: 0 - ToAll???
-        response.WriteString("Hallo Novo :)")
+        response.WriteString(packet.ReadString)
         response.WriteUInt8(0)     'afkDND, 0: nothing
 
         Client.SendWorldClient(response)
-
-        Console.WriteLine("Successfully sent: SMSG_MESSAGECHAT")
     End Sub
 
 
     Public Sub On_CMSG_LOGOUT_REQUEST(ByRef packet As PacketReader, ByRef Client As WorldServerClass)
-        Console.WriteLine("[{0}] << CMSG_LOGOUT_REQUEST", Format(TimeOfDay, "hh:mm:ss"), Client.WSIP, Client.WSPort)
+        'Dim response As New PacketWriter(OpCodes.SMSG_LOGOUT_RESPONSE)
+        'Client.SendWorldClient(response)
 
-        Dim response As New PacketWriter(OpCodes.SMSG_LOGOUT_COMPLETE)
-        Client.SendWorldClient(response)
-
-
-
-        'Save Character Position and such stuff
-
-        Dim CharDB As New SQLiteBase("characterDB")
-        Dim result As DataTable = CharDB.Select("SELECT name from characters")
+        'Save Character
+        Dim Success As Boolean = False
+        Success = Client.Character.SaveToDatabase()
 
 
-        Dim Count As Integer = result.Rows.Count
-        For i As Integer = 0 To Count - 1
-            If result.Rows(i).ItemArray(0).ToString() = WS.Character.Name Then 'if name already in Database:
+        If Success Then
+            Console.WriteLine("Character saved!")
 
-                'WS.Character.GUID
+            Dim logout_complete As New PacketWriter(OpCodes.SMSG_LOGOUT_COMPLETE)
+            Client.SendWorldClient(logout_complete)
+        Else
+            Console.WriteLine("Character could not be saved, abort logout!")
+        End If
 
-                'if name is in Database:                  '0     '1   '2 '3 '4    '5
-                CharDB.Execute("UPDATE characters SET (zoneID, mapID, x, y, z, facing) VALUES (" & _
-                               "        {0},                {1},                           {2},                                                                             {3},                                                                              {4},                                                                     {5} WHERE GUID = " & WS.Character.GUID & " )", _
-                               WS.Character.ZoneID, WS.Character.MapID, WS.Character.PositionX.ToString("F", Globalization.CultureInfo.InvariantCulture), WS.Character.PositionY.ToString("F", Globalization.CultureInfo.InvariantCulture), WS.Character.PositionZ.ToString("F", Globalization.CultureInfo.InvariantCulture), WS.Character.Facing.ToString("F", Globalization.CultureInfo.InvariantCulture))
-                Exit For 'exit this function
-            End If
-        Next
-
-        CharDB.DisposeDatabaseConnection()
-
-        Console.WriteLine("Character saved!")
-
-
-        Console.WriteLine("Successfully sent: SMSG_LOGOUT_COMPLETE")
     End Sub
 
 
     Public Sub On_CMSG_NAME_QUERY(ByRef packet As PacketReader, ByRef Client As WorldServerClass)
-        Console.WriteLine("[{0}] << CMSG_NAME_QUERY", Format(TimeOfDay, "hh:mm:ss"), Client.WSIP, Client.WSPort)
-
-
+        'Read GUID
         Dim PlayerGUID As ULong = 0
-        PlayerGUID = packet.ReadUInt64() 'uint64 GUID
+        PlayerGUID = packet.ReadUInt64
 
-        'Dim Character As New WS_Handlers_Char.CharacterObject()
-
+        'Read from Database
         Dim CharDB As New SQLiteBase("characterDB")
         Dim result As DataTable = CharDB.Select("SELECT name, race, class, gender FROM characters WHERE GUID = " & PlayerGUID.ToString)
         CharDB.DisposeDatabaseConnection()
 
-
-        WS.Character.Name = DirectCast(result.Rows(0).ItemArray(0), String)
-        WS.Character.Race = CType(result.Rows(0).ItemArray(1), GlobalConstants.Races)
-        WS.Character.Classe = CType(result.Rows(0).ItemArray(2), GlobalConstants.Classes)
-        WS.Character.Gender = CType(result.Rows(0).ItemArray(3), GlobalConstants.Genders)
+        'Save into Character Object
+        Client.Character.Name = DirectCast(result.Rows(0).ItemArray(0), String)
+        Client.Character.Race = CType(result.Rows(0).ItemArray(1), GlobalConstants.Races)
+        Client.Character.Classe = CType(result.Rows(0).ItemArray(2), GlobalConstants.Classes)
+        Client.Character.Gender = CType(result.Rows(0).ItemArray(3), GlobalConstants.Genders)
 
 
         Dim response As New PacketWriter(OpCodes.SMSG_NAME_QUERY_RESPONSE)
 
         response.WriteUInt64(PlayerGUID) 'player guid
-        response.WriteString(WS.Character.Name) 'player name
-        response.WriteUInt32(WS.Character.Race) 'race
-        response.WriteUInt32(WS.Character.Gender) 'gender
-        response.WriteUInt32(WS.Character.Classe) 'class
+        response.WriteString(Client.Character.Name) 'player name
+        response.WriteUInt32(Client.Character.Race) 'race
+        response.WriteUInt32(Client.Character.Gender) 'gender
+        response.WriteUInt32(Client.Character.Classe) 'class
         response.WriteUInt8(0) '// tell the server this name is not declined...
 
         Client.SendWorldClient(response)
-
-
-        Console.WriteLine("Successfully sent: SMSG_NAME_QUERY_RESPONSE")
     End Sub
 
 
     Public Sub On_CMSG_PLAYER_LOGIN(ByRef packet As PacketReader, ByRef Client As WorldServerClass)
-
-        Console.WriteLine("[{0}] << CMSG_PLAYER_LOGIN", Format(TimeOfDay, "hh:mm:ss"), Client.WSIP, Client.WSPort)
-
-
         'Temp: Send World Server down
         'Dim down As New PacketWriter(OpCodes.SMSG_CHARACTER_LOGIN_FAILED)
         'down.WriteUInt8(AuthLoginCodes.CHAR_LOGIN_DISABLED)
         'Client.SendWorldClient(down)
-        'Console.WriteLine("[{0}] Unable to login: WORLD SERVER DOWN", Format(TimeOfDay, "hh:mm:ss"), Client.WSIP, Client.WSPort)
+        'Console.WriteLine("[{0}] Unable to login: WORLD SERVER DOWN", Format(TimeOfDay, "HH:mm:ss"), Client.WSIP, Client.WSPort)
         'Exit Sub
         '----------------------------
 
@@ -154,17 +168,6 @@ Public Module WS_Handlers_Auth
         Dim response As New PacketWriter(OpCodes.SMSG_UPDATE_OBJECT)
         Client.SendWorldClient(NewWorld.Build_SMSG_UPDATE_OBJECT(packet, response, Client))
 
-
-        'frmMain.World(Index).SendData(SMSG_MESSAGECHAT(Hex2ASCII("09 00 00 00 00 00 00 00 00 00 00 00 00") & "=====================================" & NT & Chr(&H0)))
-        'frmMain.World(Index).SendData(SMSG_MESSAGECHAT(Hex2ASCII("09 00 00 00 00 00 00 00 00 00 00 00 00") & "Welcome to " & ServerName & NT & Chr(&H0)))
-        'frmMain.World(Index).SendData(SMSG_MESSAGECHAT(Hex2ASCII("09 00 00 00 00 00 00 00 00 00 00 00 00") & "Running Rift 2 v." & Version & NT & Chr(&H0)))
-        'frmMain.World(Index).SendData(SMSG_MESSAGECHAT(Hex2ASCII("09 00 00 00 00 00 00 00 00 00 00 00 00") & "Server-wide save every " & frmMain.SaveEvery_Minutes & " minutes." & NT & Chr(&H0)))
-        'frmMain.World(Index).SendData(SMSG_MESSAGECHAT(Hex2ASCII("09 00 00 00 00 00 00 00 00 00 00 00 00") & "!help for server command help." & NT & Chr(&H0)))
-        'frmMain.World(Index).SendData(SMSG_MESSAGECHAT(Hex2ASCII("09 00 00 00 00 00 00 00 00 00 00 00 00") & "=====================================" & NT & Chr(&H0)))
-        'Console.ForegroundColor = System.ConsoleColor.White
-        'Console.WriteLine(CType(System.Reflection.[Assembly].GetExecutingAssembly().GetCustomAttributes(GetType(System.Reflection.AssemblyTitleAttribute), False)(0), System.Reflection.AssemblyTitleAttribute).Title)
-        'Console.Write("Version {0}", System.Reflection.[Assembly].GetExecutingAssembly().GetName().Version)
-        'Console.WriteLine()
 
 
         'DAFUQ? Need Chat Handler ...
@@ -180,19 +183,24 @@ Public Module WS_Handlers_Auth
         chat_player.WriteUInt8(9)     ' slashCmd, 9: SystemMessage
         chat_player.WriteUInt32(0)    ' Language: General
         chat_player.WriteUInt64(0)    ' Guid: 0 - ToAll???
-        chat_player.WriteString("Player: " & WS.Character.Name & " logged in.")
+        chat_player.WriteString("Player: " & Client.Character.Name & " logged in.")
         chat_player.WriteUInt8(0)     'afkDND, 0: nothing
         Client.SendWorldClient(chat_player)
 
-
-        Console.WriteLine("Successfully sent: SMSG_UPDATE_OBJECT")
-        'Console.WriteLine("[{0}] Player GUID: {1} try to enter world ...", Format(TimeOfDay, "hh:mm:ss"), PlayerGUID, Client.WSIP, Client.WSPort)
+        'ToDo:
+        '/* send SMSG_FRIEND_LIST */
+        '/* send SMSG_IGNORE_LIST */
+        '/* send SMSG_BINDPOINTUPDATE */
+        '/* send SMSG_TUTORIAL_FLAGS */
+        '/* send SMSG_INITIAL_SPELLS */
+        '/* send SMSG_ACTION_BUTTONS */
+        '/* send SMSG_INITIALIZE_FACTIONS */
+        '/* send SMSG_LOGIN_SETTIMESPEED */
+        '/* Introduce the new player to the enviroment and vica versa */
     End Sub
 
 
     Public Sub On_CMSG_CHAR_DELETE(ByRef packet As PacketReader, ByRef Client As WorldServerClass)
-        Console.WriteLine("[{0}] << CMSG_CHAR_DELETE", Format(TimeOfDay, "hh:mm:ss"), Client.WSIP, Client.WSPort)
-
         Dim PlayerGUID As ULong = 0
         Dim response As New PacketWriter(OpCodes.SMSG_CHAR_DELETE)
 
@@ -201,15 +209,14 @@ Public Module WS_Handlers_Auth
 
             Dim success As Boolean = False
             Dim CharDB As New SQLiteBase("characterDB")
-            Dim result As DataTable = CharDB.Select("SELECT name from characters")
 
             success = CharDB.Execute("DELETE from characters WHERE guid = " & PlayerGUID.ToString)
 
 
             If success Then
-                Console.WriteLine("[{0}] Player GUID: {1} deleted...", Format(TimeOfDay, "hh:mm:ss"), PlayerGUID, Client.WSIP, Client.WSPort)
+                Console.WriteLine("[{0}] [{1}:{2}] Player GUID: {1} deleted...", Format(TimeOfDay, "HH:mm:ss"), PlayerGUID, Client.WSIP, Client.WSPort)
             Else
-                Console.WriteLine("[{0}] Player GUID: {1} deletion FAILED!", Format(TimeOfDay, "hh:mm:ss"), PlayerGUID, Client.WSIP, Client.WSPort)
+                Console.WriteLine("[{0}] [{1}:{2}] Player GUID: {1} deletion FAILED!", Format(TimeOfDay, "HH:mm:ss"), PlayerGUID, Client.WSIP, Client.WSPort)
             End If
 
 
@@ -218,133 +225,141 @@ Public Module WS_Handlers_Auth
             CharDB.DisposeDatabaseConnection()
 
         Catch ex As Exception
-            Console.WriteLine("[{0}] Player GUID: {1} deletion FAILED!", Format(TimeOfDay, "hh:mm:ss"), PlayerGUID, Client.WSIP, Client.WSPort)
+            Console.WriteLine("[{0}] [{1}:{2}] Player GUID: {1} deletion FAILED!", Format(TimeOfDay, "HH:mm:ss"), PlayerGUID, Client.WSIP, Client.WSPort)
         End Try
 
     End Sub
 
 
-    Public Function HandleCharCreate(ByRef packet As PacketReader, ByRef response As PacketWriter) As PacketWriter
+    Public Function HandleCharCreate(ByRef packet As PacketReader, ByRef response As PacketWriter, ByRef Client As WorldServerClass) As PacketWriter
 
-        'Dim Character As New WS_Handlers_Char.CharacterObject()
-        Dim AccountID As Integer = 1
+        'Get Account ID
+        Dim AccountID As Integer = 0
+        Dim realmDB As New SQLiteBase("realmDB")
 
-        WS.Character.Name = packet.ReadString()
-        WS.Character.Race = CType(packet.ReadByte(), GlobalConstants.Races)
-        WS.Character.Classe = CType(packet.ReadByte(), GlobalConstants.Classes)
-        WS.Character.Gender = CType(packet.ReadByte(), GlobalConstants.Genders)
-        WS.Character.Skin = packet.ReadByte()
-        WS.Character.Face = packet.ReadByte()
-        WS.Character.HairStyle = packet.ReadByte()
-        WS.Character.HairColor = packet.ReadByte()
-        WS.Character.FacialHair = packet.ReadByte()
+        Dim realmDBTable As DataTable = realmDB.Select("SELECT account_id FROM accounts WHERE username = '" & Client.Character.clientAccount & "'")
+        realmDB.DisposeDatabaseConnection()
+
+        Dim CountrealmDBTable As Integer = realmDBTable.Rows.Count
+
+        AccountID = CInt(realmDBTable.Rows(0).ItemArray(0))
 
 
+        'Read Character Data from Client
+        Client.Character.Name = packet.ReadString()
+        Client.Character.Race = CType(packet.ReadByte(), GlobalConstants.Races)
+        Client.Character.Classe = CType(packet.ReadByte(), GlobalConstants.Classes)
+        Client.Character.Gender = CType(packet.ReadByte(), GlobalConstants.Genders)
+        Client.Character.Skin = packet.ReadByte()
+        Client.Character.Face = packet.ReadByte()
+        Client.Character.HairStyle = packet.ReadByte()
+        Client.Character.HairColor = packet.ReadByte()
+        Client.Character.FacialHair = packet.ReadByte()
 
-        'ToDo: find the correct start coordinates
-        WS.Character.ZoneID = 1
-        WS.Character.MapID = 0
-        WS.Character.PositionX = -6240.319824
-        WS.Character.PositionY = 331.03299
-        WS.Character.PositionZ = 382.757996
-        WS.Character.Facing = 1
 
-        ''Save Start Area:
-        'Select Case Character.Race
+        'Save Start Area:
+        'DEBUG
+        Client.Character.ZoneID = 1
+        Client.Character.MapID = 0
+        Client.Character.PositionX = 16419.3828
+        Client.Character.PositionY = 16243.0635
+        Client.Character.PositionZ = 70.43047
+        Client.Character.Facing = 0.6499118
+
+        'Select Case Client.Character.Race
         '    Case GlobalConstants.Races.RACE_HUMAN
-        '        Character.ZoneID = 12
-        '        Character.MapID = 0
-        '        Character.PositionX = -8942.044
-        '        Character.PositionY = -130.8001
-        '        Character.PositionZ = 84.83379
-        '        Character.Facing = 0.5806077
+        '        Client.Character.ZoneID = 12
+        '        Client.Character.MapID = 0
+        '        Client.Character.PositionX = -8942.044
+        '        Client.Character.PositionY = -130.8001
+        '        Client.Character.PositionZ = 84.83379
+        '        Client.Character.Facing = 0.5806077
         '        Exit Select
 
         '    Case GlobalConstants.Races.RACE_ORC
-        '        Character.ZoneID = 14
-        '        Character.MapID = 1
-        '        Character.PositionX = -618.518005
-        '        Character.PositionY = -4251.669922
-        '        Character.PositionZ = 38.717999
-        '        Character.Facing = 1
+        '        Client.Character.ZoneID = 14
+        '        Client.Character.MapID = 1
+        '        Client.Character.PositionX = -618.518005
+        '        Client.Character.PositionY = -4251.669922
+        '        Client.Character.PositionZ = 38.717999
+        '        Client.Character.Facing = 1
         '        Exit Select
 
         '    Case GlobalConstants.Races.RACE_DWARF
-        '        Character.ZoneID = 1
-        '        Character.MapID = 0
-        '        Character.PositionX = -6240.319824
-        '        Character.PositionY = 331.03299
-        '        Character.PositionZ = 382.757996
-        '        Character.Facing = 1
+        '        Client.Character.ZoneID = 1
+        '        Client.Character.MapID = 0
+        '        Client.Character.PositionX = -6240.319824
+        '        Client.Character.PositionY = 331.03299
+        '        Client.Character.PositionZ = 382.757996
+        '        Client.Character.Facing = 1
         '        Exit Select
 
         '    Case GlobalConstants.Races.RACE_NIGHT_ELF
-        '        Character.ZoneID = 141
-        '        Character.MapID = 1
-        '        Character.PositionX = -10311.943359
-        '        Character.PositionY = 832.356689
-        '        Character.PositionZ = 1326.395752
-        '        Character.Facing = 0.210676
+        '        Client.Character.ZoneID = 141
+        '        Client.Character.MapID = 1
+        '        Client.Character.PositionX = -10311.943359
+        '        Client.Character.PositionY = 832.356689
+        '        Client.Character.PositionZ = 1326.395752
+        '        Client.Character.Facing = 0.210676
         '        Exit Select
 
         '    Case GlobalConstants.Races.RACE_UNDEAD
-        '        Character.ZoneID = 14
-        '        Character.MapID = 1
-        '        Character.PositionX = -618.518005
-        '        Character.PositionY = -4251.669922
-        '        Character.PositionZ = 38.717999
-        '        Character.Facing = 1
+        '        Client.Character.ZoneID = 14
+        '        Client.Character.MapID = 1
+        '        Client.Character.PositionX = -618.518005
+        '        Client.Character.PositionY = -4251.669922
+        '        Client.Character.PositionZ = 38.717999
+        '        Client.Character.Facing = 1
         '        Exit Select
 
         '    Case GlobalConstants.Races.RACE_TAUREN
-        '        Character.ZoneID = 215
-        '        Character.MapID = 1
-        '        Character.PositionX = -2917.580078
-        '        Character.PositionY = -257.980011
-        '        Character.PositionZ = 52.996799
-        '        Character.Facing = 1
+        '        Client.Character.ZoneID = 215
+        '        Client.Character.MapID = 1
+        '        Client.Character.PositionX = -2917.580078
+        '        Client.Character.PositionY = -257.980011
+        '        Client.Character.PositionZ = 52.996799
+        '        Client.Character.Facing = 1
         '        Exit Select
 
         '    Case GlobalConstants.Races.RACE_GNOME
-        '        Character.ZoneID = 1
-        '        Character.MapID = 0
-        '        Character.PositionX = -6240.319824
-        '        Character.PositionY = 331.03299
-        '        Character.PositionZ = 382.757996
-        '        Character.Facing = 1
+        '        Client.Character.ZoneID = 1
+        '        Client.Character.MapID = 0
+        '        Client.Character.PositionX = -6240.319824
+        '        Client.Character.PositionY = 331.03299
+        '        Client.Character.PositionZ = 382.757996
+        '        Client.Character.Facing = 1
         '        Exit Select
 
         '    Case GlobalConstants.Races.RACE_TROLL
-        '        Character.ZoneID = 14
-        '        Character.MapID = 1
-        '        Character.PositionX = -618.518005
-        '        Character.PositionY = -4251.669922
-        '        Character.PositionZ = 38.717999
-        '        Character.Facing = 1
+        '        Client.Character.ZoneID = 14
+        '        Client.Character.MapID = 1
+        '        Client.Character.PositionX = -618.518005
+        '        Client.Character.PositionY = -4251.669922
+        '        Client.Character.PositionZ = 38.717999
+        '        Client.Character.Facing = 1
         '        Exit Select
         'End Select
 
 
+        'Save Character Data into Account
         Dim CharDB As New SQLiteBase("characterDB")
-        Dim result As DataTable = CharDB.Select("SELECT name from characters")
+        Dim result As DataTable = CharDB.Select("SELECT name from characters WHERE guid = '" & Client.Character.GUID)
 
         Dim Count As Integer = result.Rows.Count
         For i As Integer = 0 To Count - 1
-            If result.Rows(i).ItemArray(0).ToString() = WS.Character.Name Then 'if name already in Database:
+            If result.Rows(i).ItemArray(0).ToString() = Client.Character.Name Then 'if name already in Database:
                 CharDB.DisposeDatabaseConnection() 'close Database
                 response.WriteUInt8(CharCreateResponseCodes.NAME_ALREADY_TAKEN)
+                Console.WriteLine("[{0}] [{1}:{2}] Player Name: {3} already taken! Account:{4}({5})", Format(TimeOfDay, "HH:mm:ss"), Client.WSIP, Client.WSPort, Client.Character.Name, Client.Character.clientAccount, AccountID)
                 Return response 'send response to client
                 Exit Function 'exit this function
             End If
         Next
 
-
-
         'if name is not in Database:                '0      '1    '2     '3     '4      '5    '6      '7         '8         '9        '10    '11  '12'13'14   '15
         CharDB.Execute("INSERT INTO characters (account_id, name, race, class, gender, skin, face, hairstyle, haircolor, facialhair, zoneID, mapID, x, y, z, facing) VALUES (" & _
-                       "  {0},        '{1}',                           {2},                            {3},                              {4},               {5},            {6},            {7},                 {8},                 {9},                 {10},             {11},            {12},                {13},                {14},                {15})", _
-                       AccountID, WS.Character.Name, Convert.ToByte(WS.Character.Race), Convert.ToByte(WS.Character.Classe), Convert.ToByte(WS.Character.Gender), WS.Character.Skin, WS.Character.Face, WS.Character.HairStyle, WS.Character.HairColor, WS.Character.FacialHair, WS.Character.ZoneID, WS.Character.MapID, WS.Character.PositionX.ToString("F", Globalization.CultureInfo.InvariantCulture), WS.Character.PositionY.ToString("F", Globalization.CultureInfo.InvariantCulture), WS.Character.PositionZ.ToString("F", Globalization.CultureInfo.InvariantCulture), WS.Character.Facing.ToString("F", Globalization.CultureInfo.InvariantCulture))
-
+                       "  {0},         '{1}',                      {2},                               {3},                                 {4},                            {5},               {6},               {7},                    {8},                    {9},                    {10},                {11},               {12},                                                                                       {13},                                                                   {14},                                                                             {15})", _
+                       AccountID, Client.Character.Name, Convert.ToByte(Client.Character.Race), Convert.ToByte(Client.Character.Classe), Convert.ToByte(Client.Character.Gender), Client.Character.Skin, Client.Character.Face, Client.Character.HairStyle, Client.Character.HairColor, Client.Character.FacialHair, Client.Character.ZoneID, Client.Character.MapID, Client.Character.PositionX.ToString("F", Globalization.CultureInfo.InvariantCulture), Client.Character.PositionY.ToString("F", Globalization.CultureInfo.InvariantCulture), Client.Character.PositionZ.ToString("F", Globalization.CultureInfo.InvariantCulture), Client.Character.Facing.ToString("F", Globalization.CultureInfo.InvariantCulture))
 
         CharDB.DisposeDatabaseConnection()
 
@@ -354,13 +369,8 @@ Public Module WS_Handlers_Auth
 
 
     Public Sub On_CMSG_CHAR_CREATE(ByRef packet As PacketReader, ByRef Client As WorldServerClass)
-
-        Console.WriteLine("[{0}] << CMSG_CHAR_CREATE", Format(TimeOfDay, "hh:mm:ss"), Client.WSIP, Client.WSPort)
-
         Dim response As New PacketWriter(OpCodes.SMSG_CHAR_CREATE)
-        Client.SendWorldClient(HandleCharCreate(packet, response))
-
-        Console.WriteLine("Successfully sent: SMSG_CHAR_CREATE")
+        Client.SendWorldClient(HandleCharCreate(packet, response, Client))
     End Sub
 
 
@@ -410,15 +420,25 @@ Public Module WS_Handlers_Auth
 
 
     Public Sub On_CMSG_CHAR_ENUM(ByRef packet As PacketReader, ByRef Client As WorldServerClass)
-
-        Console.WriteLine("[{0}] << CMSG_CHAR_ENUM", Format(TimeOfDay, "hh:mm:ss"), Client.WSIP, Client.WSPort)
-
         Dim bNumChars As Byte = 0
 
+        'Get Account ID from UserName
+        Dim account_id As Integer = 0
+        Dim realmDB As New SQLiteBase("realmDB")
+
+        Dim realmDBTable As DataTable = realmDB.Select("SELECT account_id FROM accounts WHERE username = '" & Client.Character.clientAccount & "'")
+        realmDB.DisposeDatabaseConnection()
+
+        Dim CountrealmDBTable As Integer = realmDBTable.Rows.Count
+        account_id = CInt(realmDBTable.Rows(0).ItemArray(0))
+
+        'MsgBox(Client.Character.clientAccount & " - " & account_id) 'FAIL
+
+        'Get Character by Account ID
         Dim CharDB As New SQLiteBase("characterDB")
         Dim result As DataTable = CharDB.Select("SELECT guid, name, race, class, gender, skin, face, hairstyle, " & _
                                                 "haircolor, facialhair, level, zoneID, mapID, x, y, z, guildId, petdisplayId, " & _
-                                                "petlevel, petfamily FROM characters WHERE account_id = 1")
+                                                "petlevel, petfamily FROM characters WHERE account_id = " & account_id)
 
         bNumChars = CByte(result.Rows.Count)
 
@@ -427,20 +447,15 @@ Public Module WS_Handlers_Auth
         Client.SendWorldClient(HandleCharEnum(result, bNumChars, response))
 
         CharDB.DisposeDatabaseConnection()
-
-        Console.WriteLine("Successfully sent: SMSG_CHAR_ENUM")
     End Sub
 
 
     Public Sub On_CMSG_AUTH_SESSION(ByRef packet As PacketReader, ByRef Client As WorldServerClass)
-
-        Console.WriteLine("[{0}] << CMSG_AUTH_SESSION", Format(TimeOfDay, "hh:mm:ss"), Client.WSIP, Client.WSPort)
-
         Dim crypt As New Crypt
         Dim clientVersion As Integer = packet.ReadInt32
         Dim clientSesionID As Integer = packet.ReadInt32
-        Dim clientAccount As String = packet.ReadAccountName
-        Dim clientPassword As String = packet.ReadString
+        Client.Character.clientAccount = packet.ReadAccountName.Trim.ToUpper
+        Dim clientPassword As String = packet.ReadString.Trim
 
 
         'Start Sending Auth ...
@@ -453,11 +468,10 @@ Public Module WS_Handlers_Auth
 
         'If wrong Client Version, close all
         If Not clientVersion = 3368 Then 'HardCoded needed WoW Build
-            Console.WriteLine("Account: " & clientAccount & " has attempted to log in with wrong Client build " & clientVersion)
+            Console.WriteLine("Account: " & Client.Character.clientAccount & " has attempted to log in with wrong Client build " & clientVersion)
 
             response.WriteUInt8(AuthResponseCodes.WRONG_CLIENT)
             Client.SendWorldClient(response)
-            Console.WriteLine("Successfully sent: SMSG_AUTH_RESPONSE")
             Exit Sub
         End If
 
@@ -470,7 +484,7 @@ Public Module WS_Handlers_Auth
         Dim realmDB As New SQLiteBase("realmDB")
 
         Try
-            Dim result As DataTable = realmDB.Select("SELECT password FROM accounts WHERE username = '" & clientAccount & "'")
+            Dim result As DataTable = realmDB.Select("SELECT password FROM accounts WHERE username = '" & Client.Character.clientAccount & "'")
             realmDB.DisposeDatabaseConnection()
 
             Dim Count As Integer = result.Rows.Count
@@ -481,15 +495,12 @@ Public Module WS_Handlers_Auth
                     response.WriteUInt8(AuthResponseCodes.AUTH_OK)
                     Client.SendWorldClient(response)
 
-                    Console.WriteLine("Successfully sent: SMSG_AUTH_RESPONSE")
-                    Console.WriteLine("Account: " & clientAccount & " logged in.")
+                    Console.WriteLine("Account: " & Client.Character.clientAccount & " logged in.")
                     Exit Sub
                 Else
                     If Config.AutoCreate Then
 
-
                         'Try
-                        '    Dim crypt As New Crypt
                         '    Dim RealmDB As New SQLiteBase("realmDB")
                         '    Dim result As DataTable = RealmDB.Select("SELECT username from accounts")
                         '    Dim alreadyexist As Boolean = False
@@ -498,45 +509,43 @@ Public Module WS_Handlers_Auth
                         '    Dim Count As Integer = result.Rows.Count
 
                         '    For i As Integer = 0 To Count - 1
-                        '        If result.Rows(i).ItemArray(0).ToString() = cmds(1) Then 'if username is already in Database:
+                        '        If result.Rows(i).ItemArray(0).ToString = clientAccount Then 'if username is already in Database:
                         '            alreadyexist = True
                         '            RealmDB.DisposeDatabaseConnection()
-                        '            Console.WriteLine("[{0}] Account already exist!", Format(TimeOfDay, "hh:mm:ss"))
+                        '            Console.WriteLine("[{0}] Account already exist!", Format(TimeOfDay, "HH:mm:ss"))
                         '            Exit For
                         '        End If
                         '    Next
 
                         '    If Not alreadyexist Then
                         '        success = RealmDB.Execute("INSERT INTO accounts (username, password) VALUES (" & _
-                        '                       "'{0}', '{1}')", cmds(2).ToUpper, crypt.getMd5Hash(cmds(3)))
+                        '                                  "'{0}', '{1}')", clientAccount, crypt.getMd5Hash(clientPassword))
                         '        RealmDB.DisposeDatabaseConnection()
 
                         '        If success Then
-                        '            Console.WriteLine("[{0}] Account " & cmds(2) & " successfully created!", Format(TimeOfDay, "hh:mm:ss"))
+                        '            Console.WriteLine("[{0}] Account " & clientAccount & " successfully created!", Format(TimeOfDay, "HH:mm:ss"))
+                        '            response.WriteUInt8(AuthResponseCodes.AUTH_OK)
+                        '            Client.SendWorldClient(response)
+
+                        '            Console.WriteLine("Account: " & clientAccount & " logged in.")
                         '        Else
-                        '            Console.WriteLine("[{0}] Account Creation FAILED!", Format(TimeOfDay, "hh:mm:ss"))
+                        '            Console.WriteLine("[{0}] Account Creation FAILED!", Format(TimeOfDay, "HH:mm:ss"))
+                        '            response.WriteUInt8(AuthResponseCodes.AUTH_FAILED)
+                        '            Client.SendWorldClient(response)
                         '        End If
-
-
                         '    End If
 
                         'Catch ex As Exception
-                        '    Console.WriteLine("[{0}] Account Creation FAILED!", Format(TimeOfDay, "hh:mm:ss"))
+                        '    Console.WriteLine("[{0}] Account Creation FAILED!", Format(TimeOfDay, "HH:mm:ss"))
+                        '    response.WriteUInt8(AuthResponseCodes.AUTH_FAILED)
+                        '    Client.SendWorldClient(response)
                         'End Try
 
                         response.WriteUInt8(AuthResponseCodes.AUTH_OK)
                         Client.SendWorldClient(response)
 
-                        Console.WriteLine("Successfully sent: SMSG_AUTH_RESPONSE")
-                        Console.WriteLine("Account: " & clientAccount & " logged in.")
+                        Console.WriteLine("Account: " & Client.Character.clientAccount & " logged in.")
                         Exit Sub
-                    Else
-                        realmDB.DisposeDatabaseConnection()
-                        response.WriteUInt8(AuthResponseCodes.AUTH_FAILED)
-                        Client.SendWorldClient(response)
-
-                        Console.WriteLine("Successfully sent: SMSG_AUTH_RESPONSE")
-                        Console.WriteLine("Account: " & clientAccount & " tried to login with wrong password.")
                     End If
 
                     Exit Sub
@@ -547,29 +556,22 @@ Public Module WS_Handlers_Auth
             realmDB.DisposeDatabaseConnection()
             response.WriteUInt8(AuthResponseCodes.AUTH_FAILED)
             Client.SendWorldClient(response)
-            Console.WriteLine("Successfully sent: SMSG_AUTH_RESPONSE")
-            Console.WriteLine("Account: " & clientAccount & " does not exist in Database!")
+            Console.WriteLine("Account: " & Client.Character.clientAccount & " does not exist in Database!")
 
         Catch ex As Exception
             realmDB.DisposeDatabaseConnection()
             response.WriteUInt8(AuthResponseCodes.AUTH_FAILED)
             Client.SendWorldClient(response)
-            Console.WriteLine("Successfully sent: SMSG_AUTH_RESPONSE")
-            Console.WriteLine("Account: " & clientAccount & " failed to log in!")
+            Console.WriteLine("Account: " & Client.Character.clientAccount & " failed to log in!")
         End Try
 
     End Sub
 
 
     Public Sub On_CMSG_PING(ByRef packet As PacketReader, ByRef Client As WorldServerClass)
-
-        Console.WriteLine("[{0}] << CMSG_PING", Format(TimeOfDay, "hh:mm:ss"), Client.WSIP, Client.WSPort)
-
         Dim response As New PacketWriter(OpCodes.SMSG_PONG)
         response.WriteUInt32(packet.ReadUInt32)
         Client.SendWorldClient(response)
-
-        Console.WriteLine("Successfully sent: SMSG_PONG")
     End Sub
 
 
