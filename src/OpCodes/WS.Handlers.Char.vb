@@ -5,7 +5,6 @@ Public Module WS_Handlers_Char
     Public Class CharacterObject
         Implements IDisposable
         Public Client As WorldServerClass
-
         Public clientAccount As String = ""
 
         Public Access As GlobalConstants.AccessLevel
@@ -17,7 +16,7 @@ Public Module WS_Handlers_Char
         Public Race As GlobalConstants.Races
         Public Classe As GlobalConstants.Classes
         Public Gender As GlobalConstants.Genders
-        Public Skin As Byte '?
+        Public Skin As Byte
         Public Face As Byte
         Public HairStyle As Byte
         Public HairColor As Byte
@@ -32,14 +31,14 @@ Public Module WS_Handlers_Char
         Public PositionZ As Single
         Public Facing As Single
 
-        Public GuildGuid As UInteger
+        Public GuildID As UInteger
         Public PetDisplayID As UInteger
         Public PetLevel As UInteger
-        Public PetFamilyID As UInteger
+        Public PetFamily As UInteger
 
-        Public Health As UInteger = 1
-        Public Mana As UInteger
-        Public Rage As UInteger
+        Public Health As UInteger = 100 'ToDo
+        Public Mana As UInteger = 100
+        Public Rage As UInteger = 100
         Public Focus As UInteger
         Public Energy As UInteger
         Public Strength As UInteger
@@ -50,7 +49,7 @@ Public Module WS_Handlers_Char
         Public Money As UInteger
 
 
-        Public Time As Date = Now() 'NEED UNIX TIME
+        Public Time As Date = Now() 'ToDo: NEED UNIX TIME
         Public Latency As Integer = 0
 
         Public IgnoreList As New List(Of ULong)
@@ -65,12 +64,37 @@ Public Module WS_Handlers_Char
             'Client = Nothing
         End Sub
 
-        Public Sub OnLogin()
-            '
-        End Sub
 
-        Public Sub OnLogout()
-            '
+        Public Sub GetCharacterByGuid(PlayerGUID As UInt64)
+            'Get Character by GUID
+
+            Dim CharDB As New SQLiteBase("characterDB")
+            Dim CharDBTable As DataTable = CharDB.Select("SELECT * FROM characters WHERE guid = " & PlayerGUID.ToString)
+            CharDB.DisposeDatabaseConnection()
+            Dim CountCharDBTable As Integer = CharDBTable.Rows.Count
+
+            Me.GUID = PlayerGUID
+            'account_id ItemArray(1) 'not needed
+            Me.Name = DirectCast(CharDBTable.Rows(0).ItemArray(2), String)
+            Me.Race = CType(Convert.ToByte(CharDBTable.Rows(0).ItemArray(3)), GlobalConstants.Races)
+            Me.Classe = CType(Convert.ToByte(CharDBTable.Rows(0).ItemArray(4)), GlobalConstants.Classes)
+            Me.Gender = CType(Convert.ToByte(CharDBTable.Rows(0).ItemArray(5)), GlobalConstants.Genders)
+            Me.Skin = CByte(CharDBTable.Rows(0).ItemArray(6))
+            Me.Face = CByte(CharDBTable.Rows(0).ItemArray(7))
+            Me.HairStyle = CByte(CharDBTable.Rows(0).ItemArray(8))
+            Me.HairColor = CByte(CharDBTable.Rows(0).ItemArray(9))
+            Me.FacialHair = CByte(CharDBTable.Rows(0).ItemArray(10))
+            Me.Level = CUInt(CharDBTable.Rows(0).ItemArray(11))
+            Me.ZoneID = CUInt(CharDBTable.Rows(0).ItemArray(12))
+            Me.MapID = CUInt(CharDBTable.Rows(0).ItemArray(13))
+            Me.PositionX = CSng(CharDBTable.Rows(0).ItemArray(14))
+            Me.PositionY = CSng(CharDBTable.Rows(0).ItemArray(15))
+            Me.PositionZ = CSng(CharDBTable.Rows(0).ItemArray(16))
+            Me.Facing = CSng(CharDBTable.Rows(0).ItemArray(17))
+            Me.GuildID = CUInt(CharDBTable.Rows(0).ItemArray(18))
+            Me.PetDisplayID = CUInt(CharDBTable.Rows(0).ItemArray(19))
+            Me.PetLevel = CUInt(CharDBTable.Rows(0).ItemArray(20))
+            Me.PetFamily = CUInt(CharDBTable.Rows(0).ItemArray(21))
         End Sub
 
 

@@ -29,7 +29,7 @@ Public Class SQLiteBase
         Try
             Connection.Open()
         Catch ex As SQLiteException
-            Console.WriteLine(ex.ToString)
+            Console.WriteLine("[{0}] Error Opening Database:" & Environment.NewLine & "{1}", Format(TimeOfDay, "HH:mm:ss"), ex.ToString)
         End Try
     End Sub
 
@@ -38,7 +38,7 @@ Public Class SQLiteBase
         Try
             SqlData.Close()
             Connection.Close()
-        Catch ex As Exception
+        Catch
             '
         End Try
     End Sub
@@ -46,15 +46,21 @@ Public Class SQLiteBase
 
     Public Function Execute(ByVal sql As String, ByVal ParamArray args As Object()) As Boolean
         Dim sqlString As New StringBuilder()
-        sqlString.AppendFormat(sql, args)
 
-        Dim sqlCommand As New SQLiteCommand(sqlString.ToString(), Connection)
+        Try
+            sqlString.AppendFormat(sql, args)
+        Catch ex As Exception
+            Console.WriteLine("[{0}] Error Building SQL Command: {1}" & Environment.NewLine & "{2}", Format(TimeOfDay, "HH:mm:ss"), sql, ex.ToString)
+        End Try
+
+
+        Dim sqlCommand As New SQLiteCommand(sqlString.ToString, Connection)
 
         Try
             sqlCommand.ExecuteNonQuery()
             Return True
         Catch ex As SQLiteException
-            Console.WriteLine(ex.ToString)
+            Console.WriteLine("[{0}] Error Execute SQL Command: {1}" & Environment.NewLine & "{2}", Format(TimeOfDay, "HH:mm:ss"), sqlString.ToString, ex.ToString)
             Return False
         End Try
 
@@ -70,7 +76,7 @@ Public Class SQLiteBase
             retData.Load(SqlData)
 
         Catch ex As SQLiteException
-            Console.WriteLine(ex.ToString)
+            Console.WriteLine("[{0}] Error Building SQL Command: {1}" & Environment.NewLine & "{2}", Format(TimeOfDay, "HH:mm:ss"), sql, ex.ToString)
         End Try
 
         Return retData

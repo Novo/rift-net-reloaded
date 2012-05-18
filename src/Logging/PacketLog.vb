@@ -1,6 +1,6 @@
 ﻿Public Class PacketLog
 
-    Public Sub DumpPacket(ByVal data() As Byte, Optional ByVal txt As String = "")
+    Public Shared Sub DumpPacket(ByVal data() As Byte, Optional ByVal txt As String = "")
         Dim j As Integer
         Dim buffer As String = ""
 
@@ -24,7 +24,7 @@
             buffer += " |" & vbNewLine
         End If
 
-        Console.WriteLine(buffer)
+        'Console.WriteLine(buffer)
     End Sub
 
 End Class

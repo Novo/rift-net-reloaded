@@ -3,21 +3,31 @@
     Public Sub IntializeWorldPacketHandlers()
         'PacketHandlers(OpCodes.CMSG_DONT_KNOW) = CType(AddressOf OnUnhandledPacket, HandlePacket)
 
+        ' /* Ping/Pong */
         PacketHandlers(OpCodes.CMSG_PING) = CType(AddressOf On_CMSG_PING, HandlePacket)
+
+        ' /* Start a new authenticated session */
         PacketHandlers(OpCodes.CMSG_AUTH_SESSION) = CType(AddressOf On_CMSG_AUTH_SESSION, HandlePacket)
+
+        ' /* Character handling */
         PacketHandlers(OpCodes.CMSG_CHAR_ENUM) = CType(AddressOf On_CMSG_CHAR_ENUM, HandlePacket)
         PacketHandlers(OpCodes.CMSG_CHAR_CREATE) = CType(AddressOf On_CMSG_CHAR_CREATE, HandlePacket)
         PacketHandlers(OpCodes.CMSG_CHAR_DELETE) = CType(AddressOf On_CMSG_CHAR_DELETE, HandlePacket)
+
+        ' /* Character enters world */
         PacketHandlers(OpCodes.CMSG_PLAYER_LOGIN) = CType(AddressOf On_CMSG_PLAYER_LOGIN, HandlePacket)
+
+        ' /* What is the name of GUID? */
         PacketHandlers(OpCodes.CMSG_NAME_QUERY) = CType(AddressOf On_CMSG_NAME_QUERY, HandlePacket)
-        PacketHandlers(OpCodes.CMSG_LOGOUT_REQUEST) = CType(AddressOf On_CMSG_LOGOUT_REQUEST, HandlePacket)
-        PacketHandlers(OpCodes.CMSG_MESSAGECHAT) = CType(AddressOf On_CMSG_MESSAGECHAT, HandlePacket)
-        PacketHandlers(OpCodes.CMSG_QUERY_TIME) = CType(AddressOf On_CMSG_QUERY_TIME, HandlePacket)
+
+        ' /* Cancel any running trades */
         PacketHandlers(OpCodes.CMSG_CANCEL_TRADE) = CType(AddressOf On_CMSG_CANCEL_TRADE, HandlePacket)
 
-        PacketHandlers(OpCodes.CMSG_WORLD_TELEPORT) = CType(AddressOf On_CMSG_WORLD_TELEPORT, HandlePacket)
-        PacketHandlers(OpCodes.MSG_MOVE_WORLDPORT_ACK) = CType(AddressOf On_MSG_MOVE_WORLDPORT_ACK, HandlePacket)
+        ' /* Clients wants to / doesnt want to log out */
+        PacketHandlers(OpCodes.CMSG_LOGOUT_REQUEST) = CType(AddressOf On_CMSG_LOGOUT_REQUEST, HandlePacket)
+        'PacketHandlers(OpCodes.CMSG_LOGOUT_CANCEL) = CType(AddressOf On_CMSG_LOGOUT_CANCEL, HandlePacket)
 
+        ' /* Movement start + stop - redirected to other clients */
         PacketHandlers(OpCodes.MSG_MOVE_START_FORWARD) = CType(AddressOf On_HandleMovementStatus, HandlePacket)
         PacketHandlers(OpCodes.MSG_MOVE_START_BACKWARD) = CType(AddressOf On_HandleMovementStatus, HandlePacket)
         PacketHandlers(OpCodes.MSG_MOVE_STOP) = CType(AddressOf On_HandleMovementStatus, HandlePacket)
@@ -31,17 +41,33 @@
         PacketHandlers(OpCodes.MSG_MOVE_START_PITCH_UP) = CType(AddressOf On_HandleMovementStatus, HandlePacket)
         PacketHandlers(OpCodes.MSG_MOVE_START_PITCH_DOWN) = CType(AddressOf On_HandleMovementStatus, HandlePacket)
         PacketHandlers(OpCodes.MSG_MOVE_STOP_PITCH) = CType(AddressOf On_HandleMovementStatus, HandlePacket)
+        PacketHandlers(OpCodes.MSG_MOVE_SET_FACING) = CType(AddressOf On_HandleMovementStatus, HandlePacket)
+        PacketHandlers(OpCodes.MSG_MOVE_SET_PITCH) = CType(AddressOf On_HandleMovementStatus, HandlePacket)
+        'MSG_MOVE_COLLIDE_REDIRECT
+        'MSG_MOVE_COLLIDE_STUCK
         PacketHandlers(OpCodes.MSG_MOVE_SET_RUN_MODE) = CType(AddressOf On_HandleMovementStatus, HandlePacket)
         PacketHandlers(OpCodes.MSG_MOVE_SET_WALK_MODE) = CType(AddressOf On_HandleMovementStatus, HandlePacket)
         PacketHandlers(OpCodes.MSG_MOVE_START_SWIM) = CType(AddressOf On_HandleMovementStatus, HandlePacket)
         PacketHandlers(OpCodes.MSG_MOVE_STOP_SWIM) = CType(AddressOf On_HandleMovementStatus, HandlePacket)
-        PacketHandlers(OpCodes.MSG_MOVE_SET_FACING) = CType(AddressOf On_HandleMovementStatus, HandlePacket)
-        PacketHandlers(OpCodes.MSG_MOVE_SET_PITCH) = CType(AddressOf On_HandleMovementStatus, HandlePacket)
         PacketHandlers(OpCodes.MSG_MOVE_ROOT) = CType(AddressOf On_HandleMovementStatus, HandlePacket)
         PacketHandlers(OpCodes.MSG_MOVE_UNROOT) = CType(AddressOf On_HandleMovementStatus, HandlePacket)
+        PacketHandlers(OpCodes.MSG_MOVE_WORLDPORT_ACK) = CType(AddressOf On_MSG_MOVE_WORLDPORT_ACK, HandlePacket)
+
+        ' /* Movement - update internal coordinates */
         PacketHandlers(OpCodes.MSG_MOVE_HEARTBEAT) = CType(AddressOf On_HandleMovementStatus, HandlePacket)
 
+        ' /* Changing stand state */
+        ' CMSG_STANDSTATECHANGE
+
+        ' /* Chat / emotes */
+        PacketHandlers(OpCodes.CMSG_MESSAGECHAT) = CType(AddressOf On_CMSG_MESSAGECHAT, HandlePacket)
+
+
+        PacketHandlers(OpCodes.CMSG_QUERY_TIME) = CType(AddressOf On_CMSG_QUERY_TIME, HandlePacket)
+        PacketHandlers(OpCodes.CMSG_WORLD_TELEPORT) = CType(AddressOf On_CMSG_WORLD_TELEPORT, HandlePacket)
         PacketHandlers(OpCodes.CMSG_REPORT_SCREENSHOT) = CType(AddressOf OnUnhandledPacket, HandlePacket)
+
+        ' /* Unhandled / empty OpCodes */
         PacketHandlers(OpCodes.CMSG_ZONEUPDATE) = CType(AddressOf OnUnhandledPacket, HandlePacket) 'ReadUInt32("Zone Id");
     End Sub
 

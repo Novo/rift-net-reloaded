@@ -103,7 +103,6 @@ Public Module Main
                                             If cmds.Length > 3 Then
 
                                                 Try
-                                                    Dim crypt As New Crypt
                                                     Dim RealmDB As New SQLiteBase("realmDB")
                                                     Dim result As DataTable = RealmDB.Select("SELECT username from accounts")
                                                     Dim alreadyexist As Boolean = False

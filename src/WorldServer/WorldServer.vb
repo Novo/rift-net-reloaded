@@ -124,8 +124,8 @@ Public Module WS_Main
 
                     Console.WriteLine("[{0}] [{1}:{2}] >> OpCode {3}({4}), Length:{5}", Format(TimeOfDay, "HH:mm:ss"), WSIP, WSPort, packet.Opcode.ToString, Val(packet.Opcode).ToString, packet.Size.ToString)
 
-                    Dim PacketLogger As New PacketLog
-                    PacketLogger.DumpPacket(buffer, ">>")
+                    'Dim PacketLogger As PacketLog
+                    PacketLog.DumpPacket(buffer, ">>")
 
                 Catch ex As Exception
                     Console.WriteLine("[{0}] [{1}:{2}] World Connection cause error {3}", Format(TimeOfDay, "HH:mm:ss"), WSIP, WSPort, ex.ToString & Environment.NewLine)
@@ -169,8 +169,7 @@ Public Module WS_Main
                 End If
 
 
-                Dim PacketLogger As New PacketLog
-                PacketLogger.DumpPacket(data, "<<")
+                PacketLog.DumpPacket(data, "<<")
 
             Catch ex As Exception
                 Console.WriteLine("[{0}] [{1}:{2}] World Connection cause error {3}, {4}", Format(TimeOfDay, "HH:mm:ss"), WSIP, WSPort, PacketBuffer.Opcode, Environment.NewLine & ex.ToString)

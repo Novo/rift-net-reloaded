@@ -7,12 +7,12 @@ Public Class Crypt
 
     ' Hash an input string and return the hash as
     ' a 32 character hexadecimal string.
-    Function getMd5Hash(ByVal input As String) As String
+    Public Shared Function getMd5Hash(ByVal input As String) As String
         ' Create a new instance of the MD5 object.
         Dim md5Hasher As MD5 = MD5.Create()
 
         ' Convert the input string to a byte array and compute the hash.
-        Dim data As Byte() = md5Hasher.ComputeHash(Encoding.Default.GetBytes(input))
+        Dim data As Byte() = md5Hasher.ComputeHash(Encoding.Default.GetBytes(Input))
 
         ' Create a new Stringbuilder to collect the bytes
         ' and create a string.
