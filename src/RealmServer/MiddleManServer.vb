@@ -28,11 +28,8 @@ Public Module MS_Main
                 MSListenThread.Start()
 
                 Console.WriteLine("[{0}] MiddleMan Server Listening on {1} on port {2}", Format(TimeOfDay, "HH:mm:ss"), lstHostMiddleMan, MMPort)
-            Catch e As Exception
-                Console.WriteLine()
-                Console.ForegroundColor = System.ConsoleColor.Red
-                Console.WriteLine("[{0}] Error in {2}: {1}.", Format(TimeOfDay, "HH:mm:ss"), e.Message, e.Source)
-                Console.ForegroundColor = System.ConsoleColor.Gray
+            Catch ex As Exception
+                Console.WriteLine("[{0}] [{1}:{2}] Error in: {3}", Format(TimeOfDay, "HH:mm:ss"), MMIP, MMPort, Environment.NewLine & ex.ToString)
             End Try
         End Sub
 
@@ -81,15 +78,12 @@ Public Module MS_Main
                     'Send Data async
                     MiddleManSocket.BeginSend(buffer, 0, buffer.Length, SocketFlags.None, New AsyncCallback(AddressOf AsyncSendMiddleManClientCallback), MiddleManSocket)
 
+#If DEBUG Then
+                    PacketLog.DumpPacket(buffer, ">>")
+#End If
 
-                    Dim PacketLogger As New PacketLog
-                    PacketLogger.DumpPacket(buffer, ">>")
-
-
-                Catch Err As Exception
-                    Console.ForegroundColor = System.ConsoleColor.Red
-                    Console.WriteLine("[{0}] MiddleMan Connection from [{1}:{2}] do not exist - ERROR!!!", Format(TimeOfDay, "HH:mm:ss"), MMIP, MMPort)
-                    Console.ForegroundColor = System.ConsoleColor.Gray
+                Catch ex As Exception
+                    Console.WriteLine("[{0}] MiddleMan Connection from [{1}:{2}] do not exist - ERROR!{3}", Format(TimeOfDay, "HH:mm:ss"), MMIP, MMPort, Environment.NewLine & ex.ToString)
                     MiddleManSocket.Close()
                 End Try
             End SyncLock
@@ -116,7 +110,7 @@ Public Module MS_Main
                 Me.DisposeMiddleMan()
 
             Catch socketException As SocketException
-                Console.WriteLine("Realm Connection from [{0}:{1}] cause error {3}{4}", MMIP, MMPort, socketException.Message.ToString, vbNewLine)
+                Console.WriteLine("MiddleMan Connection from [{0}:{1}] cause error {3}{4}", MMIP, MMPort, socketException.Message.ToString, vbNewLine)
             End Try
 
         End Sub

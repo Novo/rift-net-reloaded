@@ -134,7 +134,7 @@ Public Module Main
                                                     End If
 
                                                 Catch ex As Exception
-                                                    Console.WriteLine("[{0}] Account Creation FAILED!", Format(TimeOfDay, "HH:mm:ss"))
+                                                    Console.WriteLine("[{0}] Account Creation FAILED!{1}", Format(TimeOfDay, "HH:mm:ss"), Environment.NewLine & ex.ToString)
                                                 End Try
 
 
@@ -267,7 +267,7 @@ Public Module Main
             Console.WriteLine(". [done]")
 
         Catch ex As Exception
-            Console.WriteLine(ex.ToString)
+            Console.WriteLine("[{0}] Create Character Database failed!{1}", Format(TimeOfDay, "HH:mm:ss"), Environment.NewLine & ex.ToString)
         End Try
 
 
@@ -307,7 +307,7 @@ Public Module Main
             Console.WriteLine(". [done]")
 
         Catch ex As Exception
-            Console.WriteLine(ex.ToString)
+            Console.WriteLine("[{0}] Create Realm Database failed!{1}", Format(TimeOfDay, "HH:mm:ss"), Environment.NewLine & ex.ToString)
         End Try
 
     End Sub
@@ -381,7 +381,7 @@ Public Module Main
 
 
         Catch ex As Exception
-            Console.WriteLine(ex.ToString)
+            Console.WriteLine("[{0}] LoadConfigFile failed!{1}", Format(TimeOfDay, "HH:mm:ss"), Environment.NewLine & ex.ToString)
         End Try
     End Sub
 

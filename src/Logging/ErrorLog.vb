@@ -52,8 +52,8 @@
                 Case "FILE"
                     Log = New FileWriter(LogConfig)
             End Select
-        Catch e As Exception
-            Console.WriteLine("[{0}] Error creating log output!" & vbNewLine & e.ToString, Format(TimeOfDay, "HH:mm:ss"))
+        Catch ex As Exception
+            Console.WriteLine("[{0}] Error creating log output!{1}", Format(TimeOfDay, "HH:mm:ss"), Environment.NewLine & ex.ToString)
         End Try
     End Sub
 

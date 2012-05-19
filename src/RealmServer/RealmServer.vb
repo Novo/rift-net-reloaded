@@ -27,11 +27,8 @@ Public Module RS_Main
                 RSListenThread.Start()
 
                 Console.WriteLine("[{0}] Realm Server Listening on {1} on port {2}", Format(TimeOfDay, "HH:mm:ss"), lstHostRealm, RSPort)
-            Catch e As Exception
-                Console.WriteLine()
-                Console.ForegroundColor = System.ConsoleColor.Red
-                Console.WriteLine("[{0}] Error in {2}: {1}.", Format(TimeOfDay, "HH:mm:ss"), e.Message, e.Source)
-                Console.ForegroundColor = System.ConsoleColor.Gray
+            Catch ex As Exception
+                Console.WriteLine("[{0}] [{1}:{2}] Error in: {3}", Format(TimeOfDay, "HH:mm:ss"), RSIP, RSPort, Environment.NewLine & ex.ToString)
             End Try
         End Sub
 
@@ -85,10 +82,9 @@ Public Module RS_Main
                     'Send Data async
                     RealmSocket.BeginSend(buffer, 0, buffer.Length, SocketFlags.None, New AsyncCallback(AddressOf AsyncSendRealmClientCallback), RealmSocket)
 
-
-                    Dim PacketLogger As New PacketLog
-                    PacketLogger.DumpPacket(buffer, ">>")
-
+#If DEBUG Then
+                    PacketLog.DumpPacket(buffer, ">>")
+#End If
 
                 Catch Err As Exception
                     Console.ForegroundColor = System.ConsoleColor.Red

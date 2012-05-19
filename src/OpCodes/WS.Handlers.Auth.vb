@@ -533,91 +533,47 @@ Public Module WS_Handlers_Auth
         'ToDo
 
 
-        'If wrong Password, close all
-        Dim realmDB As New SQLiteBase("realmDB")
-
+        'Check Login Data
         Try
+            Dim realmDB As New SQLiteBase("realmDB")
             Dim result As DataTable = realmDB.Select("SELECT password FROM accounts WHERE username = '" & Client.Character.clientAccount & "'")
             realmDB.DisposeDatabaseConnection()
 
-            Dim Count As Integer = result.Rows.Count
+            Dim Count As Integer = result.Rows.Count 'check, it should be nothing other than 0 or 1
 
-            For i As Integer = 0 To Count - 1
-
-                If result.Rows(i).ItemArray(0).ToString = clientPassword Then
-                    response.WriteUInt8(AuthResponseCodes.AUTH_OK)
-                    Client.SendWorldClient(response)
-
-                    Console.WriteLine("Account: " & Client.Character.clientAccount & " logged in.")
-                    Exit Sub
-                Else
-                    If Config.AutoCreate Then
-
-                        'Try
-                        '    Dim RealmDB As New SQLiteBase("realmDB")
-                        '    Dim result As DataTable = RealmDB.Select("SELECT username from accounts")
-                        '    Dim alreadyexist As Boolean = False
-                        '    Dim success As Boolean = False
-
-                        '    Dim Count As Integer = result.Rows.Count
-
-                        '    For i As Integer = 0 To Count - 1
-                        '        If result.Rows(i).ItemArray(0).ToString = clientAccount Then 'if username is already in Database:
-                        '            alreadyexist = True
-                        '            RealmDB.DisposeDatabaseConnection()
-                        '            Console.WriteLine("[{0}] Account already exist!", Format(TimeOfDay, "HH:mm:ss"))
-                        '            Exit For
-                        '        End If
-                        '    Next
-
-                        '    If Not alreadyexist Then
-                        '        success = RealmDB.Execute("INSERT INTO accounts (username, password) VALUES (" & _
-                        '                                  "'{0}', '{1}')", clientAccount, crypt.getMd5Hash(clientPassword))
-                        '        RealmDB.DisposeDatabaseConnection()
-
-                        '        If success Then
-                        '            Console.WriteLine("[{0}] Account " & clientAccount & " successfully created!", Format(TimeOfDay, "HH:mm:ss"))
-                        '            response.WriteUInt8(AuthResponseCodes.AUTH_OK)
-                        '            Client.SendWorldClient(response)
-
-                        '            Console.WriteLine("Account: " & clientAccount & " logged in.")
-                        '        Else
-                        '            Console.WriteLine("[{0}] Account Creation FAILED!", Format(TimeOfDay, "HH:mm:ss"))
-                        '            response.WriteUInt8(AuthResponseCodes.AUTH_FAILED)
-                        '            Client.SendWorldClient(response)
-                        '        End If
-                        '    End If
-
-                        'Catch ex As Exception
-                        '    Console.WriteLine("[{0}] Account Creation FAILED!", Format(TimeOfDay, "HH:mm:ss"))
-                        '    response.WriteUInt8(AuthResponseCodes.AUTH_FAILED)
-                        '    Client.SendWorldClient(response)
-                        'End Try
-
-                        response.WriteUInt8(AuthResponseCodes.AUTH_OK)
-                        Client.SendWorldClient(response)
-
+            If Count = 0 Then 'Count = 0 mean no Username found
+                If Config.AutoCreate Then 'if AutoCreate = true, then create account and login
+                    Dim realmDB2 As New SQLiteBase("realmDB")
+                    If realmDB2.Execute("INSERT INTO accounts (username, password) VALUES (" & _
+                                                  "'{0}', '{1}')", Client.Character.clientAccount, clientPassword) Then
+                        Console.WriteLine("[{0}] Account " & Client.Character.clientAccount & " successfully created!", Format(TimeOfDay, "HH:mm:ss"))
                         Console.WriteLine("Account: " & Client.Character.clientAccount & " logged in.")
-                        Exit Sub
+                        response.WriteUInt8(AuthResponseCodes.AUTH_OK)
+                    Else
+                        Console.WriteLine("[{0}] Account Creation FAILED!", Format(TimeOfDay, "HH:mm:ss"))
+                        response.WriteUInt8(AuthResponseCodes.AUTH_FAILED)
                     End If
+                    realmDB2.DisposeDatabaseConnection()
+                End If 'If Config.AutoCreate
 
-                    Exit Sub
-                End If
+            Else 'if Count = 1 then check for account password
+                If result.Rows(0).ItemArray(0).ToString = clientPassword Then 'if Saved Password = Client Password
+                    Console.WriteLine("Account: " & Client.Character.clientAccount & " logged in.")
+                    response.WriteUInt8(AuthResponseCodes.AUTH_OK)
+                Else
+                    Console.WriteLine("Account: " & Client.Character.clientAccount & " tried to login with wrong password!")
+                    response.WriteUInt8(AuthResponseCodes.AUTH_FAILED)
+                End If 'If result.Rows ...
 
-            Next
-
-            realmDB.DisposeDatabaseConnection()
-            response.WriteUInt8(AuthResponseCodes.AUTH_FAILED)
-            Client.SendWorldClient(response)
-            Console.WriteLine("Account: " & Client.Character.clientAccount & " does not exist in Database!")
+            End If 'If Count = 0 ...
 
         Catch ex As Exception
-            realmDB.DisposeDatabaseConnection()
+            Console.WriteLine("[{0}] Account Creation FAILED!" & Environment.NewLine & "{1}", Format(TimeOfDay, "HH:mm:ss"), ex.ToString)
             response.WriteUInt8(AuthResponseCodes.AUTH_FAILED)
-            Client.SendWorldClient(response)
-            Console.WriteLine("Account: " & Client.Character.clientAccount & " failed to log in!")
         End Try
 
+        'Send result
+        Client.SendWorldClient(response)
     End Sub
 
 

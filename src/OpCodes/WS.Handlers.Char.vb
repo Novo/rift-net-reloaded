@@ -122,6 +122,7 @@ Public Module WS_Handlers_Char
                 Next
 
             Catch ex As Exception
+                Console.WriteLine("[{0}] Character SaveToDatabase failed!{1}", Format(TimeOfDay, "HH:mm:ss"), Environment.NewLine & ex.ToString)
                 Return success
                 MsgBox(ex.ToString)
             End Try

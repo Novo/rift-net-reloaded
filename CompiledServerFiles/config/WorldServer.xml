@@ -8,11 +8,12 @@
 Realm Server Connection Settings
 - RSPort = xxx; Default: 9100
 - RSHost = xxx; Default: 127.0.0.1
+- AutoCreate = Auto Create Account if not exist; Default: 0
 ----------------------------------------------------------------------
 <RSHost>127.0.0.1</RSHost>
 <RSPort>9100</RSPort>
 <RealmName>Alpha Test Realm</RealmName>
-
+<AutoCreate>0</AutoCreate>
 
 ----------------------------------------------------------------------
 MiddleMan Server Connection Settings

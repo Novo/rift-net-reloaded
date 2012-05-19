@@ -24,7 +24,8 @@
             buffer += " |" & vbNewLine
         End If
 
-        'Console.WriteLine(buffer)
+        Console.WriteLine(buffer)
     End Sub
+
 
 End Class

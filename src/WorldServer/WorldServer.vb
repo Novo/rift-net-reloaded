@@ -35,11 +35,8 @@ Public Module WS_Main
                 WSListenThread.Start()
 
                 Console.WriteLine("[{0}] World Server Listening on {1} on port {2}", Format(TimeOfDay, "HH:mm:ss"), lstHostWorld, WSPort)
-            Catch e As Exception
-                Console.WriteLine()
-                Console.ForegroundColor = System.ConsoleColor.Red
-                Console.WriteLine("[{0}] Error in {2}: {1}.", Format(TimeOfDay, "HH:mm:ss"), e.Message, e.Source)
-                Console.ForegroundColor = System.ConsoleColor.Gray
+            Catch ex As Exception
+                Console.WriteLine("[{0}] [{1}:{2}] Error in: {3}", Format(TimeOfDay, "HH:mm:ss"), WSIP, WSPort, Environment.NewLine & ex.ToString)
             End Try
         End Sub
 
@@ -124,9 +121,9 @@ Public Module WS_Main
 
                     Console.WriteLine("[{0}] [{1}:{2}] >> OpCode {3}({4}), Length:{5}", Format(TimeOfDay, "HH:mm:ss"), WSIP, WSPort, packet.Opcode.ToString, Val(packet.Opcode).ToString, packet.Size.ToString)
 
-                    'Dim PacketLogger As PacketLog
+#If DEBUG Then
                     PacketLog.DumpPacket(buffer, ">>")
-
+#End If
                 Catch ex As Exception
                     Console.WriteLine("[{0}] [{1}:{2}] World Connection cause error {3}", Format(TimeOfDay, "HH:mm:ss"), WSIP, WSPort, ex.ToString & Environment.NewLine)
                 End Try
@@ -168,9 +165,9 @@ Public Module WS_Main
                     Console.WriteLine("[{0}] [{1}:{2}] << Unknown OpCode: {3}, Length:{4}", Format(TimeOfDay, "HH:mm:ss"), WSIP, WSPort, PacketBuffer.Opcode, PacketBuffer.Size)
                 End If
 
-
+#If DEBUG Then
                 PacketLog.DumpPacket(data, "<<")
-
+#End If
             Catch ex As Exception
                 Console.WriteLine("[{0}] [{1}:{2}] World Connection cause error {3}, {4}", Format(TimeOfDay, "HH:mm:ss"), WSIP, WSPort, PacketBuffer.Opcode, Environment.NewLine & ex.ToString)
             End Try
