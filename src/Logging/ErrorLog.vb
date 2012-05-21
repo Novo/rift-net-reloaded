@@ -1,4 +1,22 @@
-﻿Public Class BaseWriter
+﻿'ErrorLog.vb
+'
+'Rift .NET Reloaded -- An OpenSource Server Emulator for World of Warcraft Classic Alpha 0.5.3 (3368) written in VB.Net
+'Copyright (c) 2012 noVo aka. takeoYasha
+
+'This program is free software: you can redistribute it and/or modify
+'it under the terms of the GNU General Public License as published by
+'the Free Software Foundation, either version 3 of the License, or
+'(at your option) any later version.
+
+'This program is distributed in the hope that it will be useful,
+'but WITHOUT ANY WARRANTY; without even the implied warranty of
+'MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+'GNU General Public License for more details.
+
+'You should have received a copy of the GNU General Public License
+'along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+Public Class BaseWriter
     Implements IDisposable
 
     Public Enum LogType
@@ -15,21 +33,24 @@
     Public LogLevel As LogType = LogType.NETWORK
 
     Public Sub New()
+        '
     End Sub
 
     Public Overridable Sub Dispose() Implements System.IDisposable.Dispose
+        '
     End Sub
 
     Public Overridable Sub Write(ByVal type As LogType, ByVal format As String, ByVal ParamArray arg() As Object)
+        '
     End Sub
 
     Public Overridable Sub WriteLine(ByVal type As LogType, ByVal format As String, ByVal ParamArray arg() As Object)
+        '
     End Sub
 
     Public Overridable Function ReadLine() As String
         Return Console.ReadLine()
     End Function
-
 
     Public Sub PrintDiagnosticTest()
         WriteLine(LogType.NETWORK, "{0}:************************* TEST *************************", 1)
@@ -56,8 +77,6 @@
             Console.WriteLine("[{0}] Error creating log output!{1}", Format(TimeOfDay, "HH:mm:ss"), Environment.NewLine & ex.ToString)
         End Try
     End Sub
-
-
 
 
 End Class

@@ -1,12 +1,33 @@
-﻿Imports System.IO
+﻿'Main.vb
+'
+'Rift .NET Reloaded -- An OpenSource Server Emulator for World of Warcraft Classic Alpha 0.5.3 (3368) written in VB.Net
+'Copyright (c) 2012 noVo aka. takeoYasha
+
+'This program is free software: you can redistribute it and/or modify
+'it under the terms of the GNU General Public License as published by
+'the Free Software Foundation, either version 3 of the License, or
+'(at your option) any later version.
+
+'This program is distributed in the hope that it will be useful,
+'but WITHOUT ANY WARRANTY; without even the implied warranty of
+'MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+'GNU General Public License for more details.
+
+'You should have received a copy of the GNU General Public License
+'along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+Imports System.IO
 Imports System.Reflection
 Imports System.Xml.Serialization
 Imports System.Data
-Imports System.Data.SQLite
 
 Public Module Main
     
     Sub Main()
+        Dim currentDomain As AppDomain = AppDomain.CurrentDomain
+        AddHandler currentDomain.UnhandledException, AddressOf GeneralErrorHandler
+
+
         Dim dateTimeStarted As Date = Now
 
         Console.BackgroundColor = System.ConsoleColor.Black
@@ -69,7 +90,6 @@ Public Module Main
         Console.WriteLine("Used Memory: {0}", Format(GC.GetTotalMemory(True), "### ### ##0 bytes"))
         Console.WriteLine("")
 
-        'Log Test Output
         'Log.PrintDiagnosticTest()
 
         'Add Console Input Commands
@@ -83,7 +103,6 @@ Public Module Main
         Dim varList As Integer
 
         While True
-
             Try
                 Console.Write("Rift>")
                 tmp = Console.ReadLine()
@@ -121,7 +140,7 @@ Public Module Main
 
                                                     If Not alreadyexist Then
                                                         success = RealmDB.Execute("INSERT INTO accounts (username, password) VALUES (" & _
-                                                                       "'{0}', '{1}')", cmds(2).ToUpper, crypt.getMd5Hash(cmds(3)))
+                                                                       "'{0}', '{1}')", cmds(2).ToUpper, Crypt.getMd5Hash(cmds(3)))
                                                         RealmDB.DisposeDatabaseConnection()
 
                                                         If success Then
@@ -385,6 +404,18 @@ Public Module Main
         End Try
     End Sub
 
+#End Region
+
+
+#Region "Global.ErrorHandler"
+    ' General ErrorHandler
+    Private Sub GeneralErrorHandler(ByVal sender As Object, ByVal e As UnhandledExceptionEventArgs)
+        Dim ex As Exception
+        ex = CType(e.ExceptionObject, Exception)
+
+        ' Ausgabe im Konsolenfenster
+        Console.WriteLine(ex.StackTrace)
+    End Sub
 #End Region
 
 
