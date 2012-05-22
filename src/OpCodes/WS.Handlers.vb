@@ -19,6 +19,7 @@
 Public Module WS_Handlers
 
     Public Sub IntializeWorldPacketHandlers()
+        Console.Write("[{0}] Initialize Packet OpCode definitions", Format(TimeOfDay, "HH:mm:ss"))
         'PacketHandlers(OpCodes.CMSG_DONT_KNOW) = CType(AddressOf OnUnhandledPacket, HandlePacket)
 
         ' /* Ping/Pong */
@@ -87,6 +88,8 @@ Public Module WS_Handlers
 
         ' /* Unhandled / empty OpCodes */
         PacketHandlers(OpCodes.CMSG_ZONEUPDATE) = CType(AddressOf OnUnhandledPacket, HandlePacket) 'ReadUInt32("Zone Id");
+
+        Console.WriteLine("... [done]")
     End Sub
 
 

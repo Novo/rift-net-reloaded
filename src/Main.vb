@@ -22,29 +22,21 @@ Imports System.Xml.Serialization
 Imports System.Data
 
 Public Module Main
-    
+
+
     Sub Main()
-        Dim currentDomain As AppDomain = AppDomain.CurrentDomain
-        AddHandler currentDomain.UnhandledException, AddressOf GeneralErrorHandler
-
-
         Dim dateTimeStarted As Date = Now
 
-        Console.BackgroundColor = System.ConsoleColor.Black
         Console.Title = String.Format("{0} v{1}", CType([Assembly].GetExecutingAssembly().GetCustomAttributes(GetType(AssemblyTitleAttribute), False)(0), AssemblyTitleAttribute).Title, [Assembly].GetExecutingAssembly().GetName().Version)
 
         Console.ForegroundColor = System.ConsoleColor.Yellow
-        Console.WriteLine("{0}", CType([Assembly].GetExecutingAssembly().GetCustomAttributes(GetType(AssemblyProductAttribute), False)(0), AssemblyProductAttribute).Product)
+        Console.WriteLine(String.Format("{0} v{1}", CType([Assembly].GetExecutingAssembly().GetCustomAttributes(GetType(AssemblyTitleAttribute), False)(0), AssemblyTitleAttribute).Title, [Assembly].GetExecutingAssembly().GetName().Version))
+        Console.WriteLine("An OpenSource Server Emulator for World of Warcraft Classic Alpha 0.5.3 (3368)")
         Console.WriteLine(CType([Assembly].GetExecutingAssembly().GetCustomAttributes(GetType(AssemblyCopyrightAttribute), False)(0), AssemblyCopyrightAttribute).Copyright)
-        Console.WriteLine()
 
         Console.ForegroundColor = System.ConsoleColor.Magenta
         Console.WriteLine("http://www.easy-emu.de")
         Console.WriteLine()
-
-        Console.ForegroundColor = System.ConsoleColor.White
-        Console.WriteLine(CType([Assembly].GetExecutingAssembly().GetCustomAttributes(GetType(System.Reflection.AssemblyTitleAttribute), False)(0), AssemblyTitleAttribute).Title)
-        Console.Write("Version {0}", [Assembly].GetExecutingAssembly().GetName().Version)
         Console.WriteLine()
 
         Console.ForegroundColor = System.ConsoleColor.Gray
@@ -54,17 +46,28 @@ Public Module Main
         Console.WriteLine(" [done]")
         Console.WriteLine()
 
+        'ToDo: ConsoleCtrlHandler
+
+
+        'Initialize Unhandled Exception Handler
+        InitializeExceptionHandler()
+
 
         'Load Configuration File
         LoadConfigFile()
 
 
-        'Creating logger
+        'Create Logger
         BaseWriter.CreateLog(Config.LogType, Config.LogConfig, Log)
         Log.LogLevel = Config.LogLevel
 
 
+        'Initialize Databases
         InitializeDatabases()
+
+
+        'Intialize Word Packet Handler
+        IntializeWorldPacketHandlers()
 
 
         'Start Realm Server
@@ -80,9 +83,6 @@ Public Module Main
         WS.Start()
 
 
-        'Intialize Word Packet Handler
-        IntializeWorldPacketHandlers()
-
         GC.Collect()
 
         Console.WriteLine("")
@@ -96,6 +96,8 @@ Public Module Main
         AddConsoleCommand()
     End Sub
 
+
+#Region "Global.ConsoleCommands"
 
     Public Sub AddConsoleCommand()
         Dim tmp As String = "", CommandList() As String, cmds() As String
@@ -247,6 +249,7 @@ Public Module Main
         End While
     End Sub
 
+#End Region
 
 
 #Region "Global.Database"
@@ -258,9 +261,9 @@ Public Module Main
         Try
 
             If Not File.Exists("database\characterDB.s3db") Then
-                Console.Write("[{0}] Default Character Database does not exist, creating", Format(TimeOfDay, "HH:mm:ss"))
+                Console.Write("[{0}] Character Database does not exist, creating", Format(TimeOfDay, "HH:mm:ss"))
             Else
-                Console.Write("[{0}] Default Character Database found, checking default tables", Format(TimeOfDay, "HH:mm:ss"))
+                Console.Write("[{0}] Character Database found, checking tables", Format(TimeOfDay, "HH:mm:ss"))
             End If
 
 
@@ -295,9 +298,9 @@ Public Module Main
         Try
 
             If Not File.Exists("database\realmDB.s3db") Then
-                Console.Write("[{0}] Default Realm Database does not exist, creating", Format(TimeOfDay, "HH:mm:ss"))
+                Console.Write("[{0}] Realm Database does not exist, creating", Format(TimeOfDay, "HH:mm:ss"))
             Else
-                Console.Write("[{0}] Default Realm Database found, checking default tables", Format(TimeOfDay, "HH:mm:ss"))
+                Console.Write("[{0}] Realm Database found, checking tables", Format(TimeOfDay, "HH:mm:ss"))
             End If
 
 
@@ -360,62 +363,71 @@ Public Module Main
     End Class
 
     Public Sub LoadConfigFile()
-        Try
-            Dim XMLFilePath As String = "config\WorldServer.xml"
+        'Try
+        Dim XMLFilePath As String = "config\WorldServer.xml"
 
-            'Get filename from console arguments
-            Dim args As String() = Environment.GetCommandLineArgs()
-            For Each arg As String In args
-                If arg.IndexOf("config") <> -1 Then
-                    XMLFilePath = Trim(arg.Substring(arg.IndexOf("=") + 1))
-                End If
-            Next
-
-            'Make sure a config file exists
-            If System.IO.File.Exists(XMLFilePath) = False Then
-                Console.ForegroundColor = ConsoleColor.Red
-                Console.WriteLine("[{0}] Error: {1} does not exist.", Format(TimeOfDay, "HH:mm:ss"), XMLFilePath)
-                Console.WriteLine("Please copy the xml files into the same directory as the Server exe files.")
-                Console.WriteLine("Press any key to exit server: ")
-                Console.ReadKey()
-                End
+        'Get filename from console arguments
+        Dim args As String() = Environment.GetCommandLineArgs()
+        For Each arg As String In args
+            If arg.IndexOf("config") <> -1 Then
+                XMLFilePath = Trim(arg.Substring(arg.IndexOf("=") + 1))
             End If
+        Next
 
-            'Load config
-            Console.Write("[{0}] Loading Configuration from {1}", Format(TimeOfDay, "HH:mm:ss"), XMLFilePath)
+        'Make sure a config file exists
+        'If System.IO.File.Exists(XMLFilePath) = False Then
+        '    Console.ForegroundColor = ConsoleColor.Red
+        '    Console.WriteLine("[{0}] Error: {1} does not exist.", Format(TimeOfDay, "HH:mm:ss"), XMLFilePath)
+        '    Console.WriteLine("Please copy the xml files into the same directory as the Server exe files.")
+        '    Console.WriteLine("Press any key to exit server: ")
+        '    Console.ReadKey()
+        '    End
+        'End If
 
-            Config = New XMLConfigFile
-            Console.Write(".")
+        'Load config
+        Console.Write("[{0}] Loading Configuration from {1}", Format(TimeOfDay, "HH:mm:ss"), XMLFilePath)
 
-            Dim oXS As XmlSerializer = New XmlSerializer(GetType(XMLConfigFile)) ' module muss public sein
+        Config = New XMLConfigFile
+        Console.Write(".")
 
-            Console.Write(".")
-            Dim oStmR As StreamReader
-            oStmR = New StreamReader(XMLFilePath)
+        Dim oXS As XmlSerializer = New XmlSerializer(GetType(XMLConfigFile)) ' module muss public sein
 
-            Config = DirectCast(oXS.Deserialize(oStmR), XMLConfigFile)
-            oStmR.Close()
+        Console.Write(".")
+        Dim oStmR As StreamReader
+        oStmR = New StreamReader(XMLFilePath)
 
-            Console.WriteLine(". [done]")
+        Config = DirectCast(oXS.Deserialize(oStmR), XMLConfigFile)
+        oStmR.Close()
+
+        Console.WriteLine(". [done]")
 
 
-        Catch ex As Exception
-            Console.WriteLine("[{0}] LoadConfigFile failed!{1}", Format(TimeOfDay, "HH:mm:ss"), Environment.NewLine & ex.ToString)
-        End Try
+        'Catch ex As Exception
+        'Console.WriteLine("[{0}] LoadConfigFile failed!{1}", Format(TimeOfDay, "HH:mm:ss"), Environment.NewLine & ex.ToString)
+        'End Try
     End Sub
 
 #End Region
 
 
 #Region "Global.ErrorHandler"
-    ' General ErrorHandler
+
+    Private Sub InitializeExceptionHandler()
+        Console.Write("[{0}] Initialize Unhandled Exception Handler", Format(TimeOfDay, "HH:mm:ss"))
+        Dim currentDomain As AppDomain = AppDomain.CurrentDomain
+        AddHandler currentDomain.UnhandledException, AddressOf GeneralErrorHandler
+        Console.WriteLine("... [done]")
+    End Sub
+
+    'General ErrorHandler
     Private Sub GeneralErrorHandler(ByVal sender As Object, ByVal e As UnhandledExceptionEventArgs)
         Dim ex As Exception
         ex = CType(e.ExceptionObject, Exception)
 
-        ' Ausgabe im Konsolenfenster
-        Console.WriteLine(ex.StackTrace)
+        Console.WriteLine(Environment.NewLine & "Unhandled Exception Error: " & Environment.NewLine & ex.StackTrace)
+        Console.ReadKey()
     End Sub
+
 #End Region
 
 
