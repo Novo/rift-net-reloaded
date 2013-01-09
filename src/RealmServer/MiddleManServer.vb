@@ -1,7 +1,5 @@
-﻿'MiddleManServer.vb
-'
-'Rift .NET Reloaded -- An OpenSource Server Emulator for World of Warcraft Classic Alpha 0.5.3 (3368) written in VB.Net
-'Copyright (c) 2012 noVo aka. takeoYasha
+﻿'Rift .NET Reloaded -- An OpenSource Server Emulator for World of Warcraft Classic Alpha 0.5.3 (3368) written in VB.Net
+'Copyright (c) 2013 noVo aka. takeoYasha www.easy-emu.de
 
 'This program is free software: you can redistribute it and/or modify
 'it under the terms of the GNU General Public License as published by
@@ -20,8 +18,10 @@ Imports System.Net
 Imports System.Net.Sockets
 Imports System.Threading
 
+
 Public Module MS_Main
     Public MS As MiddleManServerClass
+
 
     Class MiddleManServerClass
         Implements IDisposable
@@ -75,14 +75,14 @@ Public Module MS_Main
             Console.ForegroundColor = System.ConsoleColor.Gray
 
             Dim response As New PacketWriter()
-            response.WriteBytes(System.Text.Encoding.ASCII.GetBytes("127.0.0.1:8086"))
+            response.WriteBytes(System.Text.Encoding.ASCII.GetBytes(Config.WSHost & ":" & Config.WSPort))
             response.WriteUInt8(0)
 
             SendMiddleManClient(response)
         End Sub
 
-        Public Sub SendMiddleManClient(ByVal packet As PacketWriter)
 
+        Public Sub SendMiddleManClient(ByVal packet As PacketWriter)
             If packet Is Nothing Then Throw New ApplicationException("MiddleMan Packet doesn't contain data!")
             SyncLock Me
                 Try
@@ -105,12 +105,10 @@ Public Module MS_Main
                     MiddleManSocket.Close()
                 End Try
             End SyncLock
-
         End Sub
 
 
         Public Sub AsyncSendMiddleManClientCallback(ByVal result As IAsyncResult)
-
             Try
                 Dim MiddleManSocket As Socket = TryCast(result.AsyncState, Socket)
                 Dim bytesSent As Integer = 0
@@ -130,7 +128,6 @@ Public Module MS_Main
             Catch socketException As SocketException
                 Console.WriteLine("MiddleMan Connection from [{0}:{1}] cause error {3}{4}", MMIP, MMPort, socketException.Message.ToString, vbNewLine)
             End Try
-
         End Sub
 
 
@@ -151,6 +148,7 @@ Public Module MS_Main
             Console.WriteLine("[{0}] MiddleMan Connection from [{1}:{2}] deleted", Format(TimeOfDay, "HH:mm:ss"), MMIP, MMPort)
             Console.ForegroundColor = System.ConsoleColor.Gray
         End Sub
+
 
 
     End Class

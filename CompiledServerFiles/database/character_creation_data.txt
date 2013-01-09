@@ -1,0 +1,1 @@
+CREATE TABLE [character_creation_data] ( [race] tinyint(4) NOT NULL, [class] tinyint(4) NOT NULL, [mapID] smallint(6) NOT NULL, [zoneID] smallint(6) NOT NULL, [x] float NOT NULL, [y] float NOT NULL, [z] float NOT NULL, [o] float NOT NULL, PRIMARY KEY ([race],[class]))

@@ -82,6 +82,8 @@
   <ItemGroup>
     <Compile Include="Database\Crypt.vb" />
     <Compile Include="OpCodes\Global.Opcodes.vb" />
+    <Compile Include="OpCodes\WS.Account.vb" />
+    <Compile Include="OpCodes\WS.Handlers.Chat.vb" />
     <Compile Include="OpCodes\WS.Handlers.World.vb" />
     <Compile Include="PacketHandler\Global.PacketReader.vb" />
     <Compile Include="Main.vb" />
@@ -102,6 +104,10 @@
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
     </Compile>
     <Compile Include="RealmServer\RealmServer.vb" />
+    <Compile Include="WorldServer\Globals.vb" />
+    <Compile Include="WorldServer\Singleton.vb" />
+    <Compile Include="WorldServer\SingletonBase.vb" />
+    <Compile Include="WorldServer\WorldManager.vb" />
     <Compile Include="WorldServer\WorldServer.vb" />
   </ItemGroup>
   <ItemGroup>
@@ -129,7 +135,7 @@
     <Compile Include="Logging\ErrorLog.vb" />
     <Compile Include="Logging\FileWriter.vb" />
     <Compile Include="Logging\PacketLog.vb" />
-    <Compile Include="OpCodes\WS.Handlers.Char.vb" />
+    <Compile Include="OpCodes\WS.Character.vb" />
     <Compile Include="PacketHandler\Global.PacketWriter.vb" />
     <Compile Include="OpCodes\WS.Handlers.Auth.vb" />
     <Compile Include="OpCodes\WS.Handlers.vb" />

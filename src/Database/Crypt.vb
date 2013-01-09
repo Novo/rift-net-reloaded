@@ -1,7 +1,5 @@
-﻿'Crypt.vb
-'
-'Rift .NET Reloaded -- An OpenSource Server Emulator for World of Warcraft Classic Alpha 0.5.3 (3368) written in VB.Net
-'Copyright (c) 2012 noVo aka. takeoYasha
+﻿'Rift .NET Reloaded -- An OpenSource Server Emulator for World of Warcraft Classic Alpha 0.5.3 (3368) written in VB.Net
+'Copyright (c) 2013 noVo aka. takeoYasha www.easy-emu.de
 
 'This program is free software: you can redistribute it and/or modify
 'it under the terms of the GNU General Public License as published by
@@ -20,8 +18,8 @@ Imports System
 Imports System.Security.Cryptography
 Imports System.Text
 
-Public Class Crypt
 
+Public Class Crypt
 
     ' Hash an input string and return the hash as
     ' a 32 character hexadecimal string.
@@ -30,7 +28,7 @@ Public Class Crypt
         Dim md5Hasher As MD5 = MD5.Create()
 
         ' Convert the input string to a byte array and compute the hash.
-        Dim data As Byte() = md5Hasher.ComputeHash(Encoding.Default.GetBytes(Input))
+        Dim data As Byte() = md5Hasher.ComputeHash(Encoding.Default.GetBytes(input))
 
         ' Create a new Stringbuilder to collect the bytes
         ' and create a string.
@@ -45,7 +43,6 @@ Public Class Crypt
 
         ' Return the hexadecimal string.
         Return sBuilder.ToString()
-
     End Function
 
 
@@ -62,7 +59,6 @@ Public Class Crypt
         Else
             Return False
         End If
-
     End Function
 
 

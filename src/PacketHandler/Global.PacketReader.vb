@@ -1,7 +1,5 @@
-﻿'Global.PacketReader.vb
-'
-'Rift .NET Reloaded -- An OpenSource Server Emulator for World of Warcraft Classic Alpha 0.5.3 (3368) written in VB.Net
-'Copyright (c) 2012 noVo aka. takeoYasha
+﻿'Rift .NET Reloaded -- An OpenSource Server Emulator for World of Warcraft Classic Alpha 0.5.3 (3368) written in VB.Net
+'Copyright (c) 2013 noVo aka. takeoYasha www.easy-emu.de
 
 'This program is free software: you can redistribute it and/or modify
 'it under the terms of the GNU General Public License as published by
@@ -15,7 +13,6 @@
 
 'You should have received a copy of the GNU General Public License
 'along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
 Imports System.IO
 Imports System.Text
 

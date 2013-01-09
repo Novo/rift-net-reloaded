@@ -14,21 +14,11 @@
 'You should have received a copy of the GNU General Public License
 'along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-Public Class ConsoleWriter
-    Inherits BaseWriter
+Public MustInherit Class SingletonBase(Of T As SingletonBase(Of T))
 
-    Public Overrides Sub Write(ByVal type As LogType, ByVal formatStr As String, ByVal ParamArray arg() As Object)
-        If LogLevel > type Then Return
-
-        Console.Write(formatStr, arg)
-    End Sub
-
-
-    Public Overrides Sub WriteLine(ByVal type As LogType, ByVal formatStr As String, ByVal ParamArray arg() As Object)
-        If LogLevel > type Then Return
-
-        Console.WriteLine("[" & Format(TimeOfDay, "HH:mm:ss") & "] " & formatStr, arg)
-    End Sub
+    Public Shared Function GetInstance() As T
+        Return Singleton.GetInstance(Of T)()
+    End Function
 
 
 

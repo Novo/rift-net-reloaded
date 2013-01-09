@@ -14,20 +14,22 @@
 'You should have received a copy of the GNU General Public License
 'along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-Public Class ConsoleWriter
-    Inherits BaseWriter
+Public Class Globals
+    'Public Shared DataMgr As DataManager
+    'Public Shared ObjectMgr As ObjectManager
+    'Public Shared SkillMgr As SkillManager
+    'Public Shared SpawnMgr As SpawnManager
+    'Public Shared SpellMgr As SpellManager
+    Public Shared WorldMgr As WorldManager
 
-    Public Overrides Sub Write(ByVal type As LogType, ByVal formatStr As String, ByVal ParamArray arg() As Object)
-        If LogLevel > type Then Return
 
-        Console.Write(formatStr, arg)
-    End Sub
-
-
-    Public Overrides Sub WriteLine(ByVal type As LogType, ByVal formatStr As String, ByVal ParamArray arg() As Object)
-        If LogLevel > type Then Return
-
-        Console.WriteLine("[" & Format(TimeOfDay, "HH:mm:ss") & "] " & formatStr, arg)
+    Public Shared Sub InitializeManager()
+        'DataMgr = DataManager.GetInstance()
+        'ObjectMgr = ObjectManager.GetInstance()
+        'SkillMgr = SkillManager.GetInstance()
+        'SpawnMgr = SpawnManager.GetInstance()
+        'SpellMgr = SpellManager.GetInstance()
+        WorldMgr = WorldManager.GetInstance()
     End Sub
 
 

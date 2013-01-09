@@ -1,7 +1,5 @@
-﻿'WS.Handlers.vb
-'
-'Rift .NET Reloaded -- An OpenSource Server Emulator for World of Warcraft Classic Alpha 0.5.3 (3368) written in VB.Net
-'Copyright (c) 2012 noVo aka. takeoYasha
+﻿'Rift .NET Reloaded -- An OpenSource Server Emulator for World of Warcraft Classic Alpha 0.5.3 (3368) written in VB.Net
+'Copyright (c) 2013 noVo aka. takeoYasha www.easy-emu.de
 
 'This program is free software: you can redistribute it and/or modify
 'it under the terms of the GNU General Public License as published by
@@ -81,7 +79,6 @@ Public Module WS_Handlers
         ' /* Chat / emotes */
         PacketHandlers(OpCodes.CMSG_MESSAGECHAT) = CType(AddressOf On_CMSG_MESSAGECHAT, HandlePacket)
 
-
         PacketHandlers(OpCodes.CMSG_QUERY_TIME) = CType(AddressOf On_CMSG_QUERY_TIME, HandlePacket)
         PacketHandlers(OpCodes.CMSG_WORLD_TELEPORT) = CType(AddressOf On_CMSG_WORLD_TELEPORT, HandlePacket)
         PacketHandlers(OpCodes.CMSG_REPORT_SCREENSHOT) = CType(AddressOf OnUnhandledPacket, HandlePacket)
@@ -96,6 +93,7 @@ Public Module WS_Handlers
     Public Sub OnUnhandledPacket(ByRef packet As PacketReader, ByRef Client As WorldServerClass)
         Console.WriteLine("[{0}] [{1}:{2}] << Unhandled OpCode: {3}({4}), Length:{5}", Format(TimeOfDay, "HH:mm:ss"), Client.WSIP, Client.WSPort, packet.Opcode, Val(packet.Opcode).ToString, packet.Size)
     End Sub
+
 
 
 End Module

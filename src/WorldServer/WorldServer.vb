@@ -1,7 +1,5 @@
-﻿'WorldServer.vb
-'
-'Rift .NET Reloaded -- An OpenSource Server Emulator for World of Warcraft Classic Alpha 0.5.3 (3368) written in VB.Net
-'Copyright (c) 2012 noVo aka. takeoYasha
+﻿'Rift .NET Reloaded -- An OpenSource Server Emulator for World of Warcraft Classic Alpha 0.5.3 (3368) written in VB.Net
+'Copyright (c) 2013 noVo aka. takeoYasha www.easy-emu.de
 
 'This program is free software: you can redistribute it and/or modify
 'it under the terms of the GNU General Public License as published by
@@ -21,23 +19,25 @@ Imports System.Net.Sockets
 Imports System.Threading
 Imports System.Text
 
+
 Public Module WS_Main
     Public WS As WorldServerClass
     Public Log As New BaseWriter
     Public PacketHandlers As New Dictionary(Of OpCodes, HandlePacket)
     Delegate Sub HandlePacket(ByRef Packet As PacketReader, ByRef Client As WorldServerClass)
 
+
     Class WorldServerClass
         Implements IDisposable
 
-		Public _flagStopListen As Boolean = False
+        Public _flagStopListen As Boolean = False
+        Public Account As AccountObject = Nothing
         Public Character As CharacterObject = Nothing
         Private WorldServerSocket As Socket = Nothing
         Private ConnectionWorld As TcpListener = Nothing
         Public WSIP As Net.IPAddress = Net.IPAddress.Parse("0.0.0.0")
         Public WSPort As Int32 = Config.WSPort
         Private lstHostWorld As Net.IPAddress = Net.IPAddress.Parse(Config.WSHost)
-
 
 
         Public Sub Start()
@@ -65,8 +65,6 @@ Public Module WS_Main
                 If ConnectionWorld.Pending() Then
 
                     Dim WorldClient As New WorldServerClass 'Create a new World for every new Connection
-                    WorldClient.Character = New CharacterObject(WorldClient) 'Create a new CharacterObject for every new World
-
                     WorldClient.WorldServerSocket = ConnectionWorld.AcceptSocket
 
                     Dim NewThread As New Thread(AddressOf WorldClient.ProcessWorld)
@@ -87,7 +85,6 @@ Public Module WS_Main
             Console.WriteLine("[{0}] New incoming World connection from [{1}:{2}]", Format(TimeOfDay, "HH:mm:ss"), WSIP, WSPort)
             Console.ForegroundColor = System.ConsoleColor.Gray
 
-
             Dim response As New PacketWriter(OpCodes.SMSG_AUTH_CHALLENGE, False)
             response.WriteUInt8(&H0)
             response.WriteUInt8(&H0)
@@ -96,7 +93,6 @@ Public Module WS_Main
             response.WriteUInt8(&H0)
             response.WriteUInt8(&H0)
             SendWorldClient(response)
-
 
             While Not _flagStopListen
                 Thread.Sleep(100)
@@ -112,8 +108,9 @@ Public Module WS_Main
 
             WorldServerSocket.Close()
 
-
-
+            If Not IsNothing(Me.Character) Then
+                Globals.WorldMgr.DeleteSession(Me.Character.GUID)
+            End If
 
             Console.ForegroundColor = System.ConsoleColor.DarkGray
             Console.WriteLine("[{0}] World Connection from [{1}:{2}] closed", Format(TimeOfDay, "HH:mm:ss"), WSIP, WSPort)
@@ -125,14 +122,8 @@ Public Module WS_Main
             If packet Is Nothing Then Throw New ApplicationException("World Packet doesn't contain data!")
 
             SyncLock Me
-
                 Try
                     Dim buffer As Byte() = packet.ReadDataToSend()
-
-                    'Send Data sync:
-                    'Dim bytesSent As Integer = 0
-                    'bytesSent = Socket.Send(buffer, 0, buffer.Length, SocketFlags.None)
-                    'Console.WriteLine("[{0}:{1}] World Data sent {2} bytes, opcode={3}", IP, Port, i, packet.Opcode)
 
                     'Send Data async
                     WorldServerSocket.BeginSend(buffer, 0, buffer.Length, SocketFlags.None, New AsyncCallback(AddressOf AsyncSendWorldClientCallback), WorldServerSocket)
@@ -145,25 +136,20 @@ Public Module WS_Main
                 Catch ex As Exception
                     Console.WriteLine("[{0}] [{1}:{2}] World Connection cause error {3}", Format(TimeOfDay, "HH:mm:ss"), WSIP, WSPort, ex.ToString & Environment.NewLine)
                 End Try
-
             End SyncLock
         End Sub
 
-        Public Sub AsyncSendWorldClientCallback(ByVal result As IAsyncResult)
 
+        Public Sub AsyncSendWorldClientCallback(ByVal result As IAsyncResult)
             Try
                 Dim WorldServerSocket As Socket = TryCast(result.AsyncState, Socket)
                 Dim bytesSent As Integer = 0
                 bytesSent = WorldServerSocket.EndSend(result)
 
-                'WorldServerSocket.Close()
-                'Me.DisposeWorld()
-
                 Console.WriteLine("[{0}] [{1}:{2}] World Data sent {3} bytes", Format(TimeOfDay, "HH:mm:ss"), WSIP, WSPort, bytesSent)
             Catch socketException As SocketException
                 Console.WriteLine("[{0}] [{1}:{2}] World Connection cause error {3}", Format(TimeOfDay, "HH:mm:ss"), WSIP, WSPort, socketException.ToString & Environment.NewLine)
             End Try
-
         End Sub
 
 
@@ -171,9 +157,17 @@ Public Module WS_Main
             Dim PacketBuffer As New PacketReader(data)
 
             Try
-
                 If [Enum].IsDefined(GetType(OpCodes), PacketBuffer.Opcode) Then
                     Console.WriteLine("[{0}] [{1}:{2}] << OpCode: {3}({4}), Length:{5}", Format(TimeOfDay, "HH:mm:ss"), WSIP, WSPort, PacketBuffer.Opcode, Val(PacketBuffer.Opcode).ToString, PacketBuffer.Size.ToString)
+
+                    If Me.Character IsNot Nothing Then
+                        Dim charGuid As ULong = Me.Character.GUID
+                        If Globals.WorldMgr.Sessions.ContainsKey(charGuid) Then
+                            Globals.WorldMgr.Sessions(charGuid) = Me
+                        Else
+                            Globals.WorldMgr.AddSession(charGuid, Me)
+                        End If
+                    End If
 
                     If PacketHandlers.ContainsKey(PacketBuffer.Opcode) = True Then
                         PacketHandlers(PacketBuffer.Opcode).Invoke(PacketBuffer, Me)
@@ -189,7 +183,6 @@ Public Module WS_Main
             Catch ex As Exception
                 Console.WriteLine("[{0}] [{1}:{2}] World Connection cause error {3}, {4}", Format(TimeOfDay, "HH:mm:ss"), WSIP, WSPort, PacketBuffer.Opcode, Environment.NewLine & ex.ToString)
             End Try
-
         End Sub
 
 
@@ -198,6 +191,7 @@ Public Module WS_Main
             Console.WriteLine("[{0}] World Connection from [{1}:{2}] deleted", Format(TimeOfDay, "HH:mm:ss"), WSIP, WSPort)
             Console.ForegroundColor = System.ConsoleColor.Gray
         End Sub
+
 
 
     End Class

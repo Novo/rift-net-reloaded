@@ -1,7 +1,5 @@
-﻿'SQLiteBase.vb
-'
-'Rift .NET Reloaded -- An OpenSource Server Emulator for World of Warcraft Classic Alpha 0.5.3 (3368) written in VB.Net
-'Copyright (c) 2012 noVo aka. takeoYasha
+﻿'Rift .NET Reloaded -- An OpenSource Server Emulator for World of Warcraft Classic Alpha 0.5.3 (3368) written in VB.Net
+'Copyright (c) 2013 noVo aka. takeoYasha www.easy-emu.de
 
 'This program is free software: you can redistribute it and/or modify
 'it under the terms of the GNU General Public License as published by
@@ -21,6 +19,7 @@ Imports System.Linq
 Imports System.Text
 Imports System.Data.SQLite
 Imports System.Data
+
 
 Public Class SQLiteBase
     Implements IDisposable
@@ -42,7 +41,8 @@ Public Class SQLiteBase
 
 
     Public Sub New(ByVal db As String)
-        Connection = New SQLiteConnection("Data Source=Database\" & db & ".s3db; Version=3")
+        Connection = New SQLiteConnection("Data Source=Database/" & db & ".s3db; Version=3")
+        'Connection = New SQLiteConnection("URI=file:Database/" & db & ".s3db; Version=3") 'Mono fix?
 
         Try
             Connection.Open()
@@ -57,7 +57,6 @@ Public Class SQLiteBase
             SqlData.Close()
             Connection.Close()
         Catch
-            '
         End Try
     End Sub
 
@@ -81,7 +80,6 @@ Public Class SQLiteBase
             Console.WriteLine("[{0}] Error Execute SQL Command: {1}" & Environment.NewLine & "{2}", Format(TimeOfDay, "HH:mm:ss"), sqlString.ToString, ex.ToString)
             Return False
         End Try
-
     End Function
 
 
@@ -99,6 +97,7 @@ Public Class SQLiteBase
 
         Return retData
     End Function
+
 
 
 End Class

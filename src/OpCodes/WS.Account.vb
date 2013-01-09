@@ -14,20 +14,17 @@
 'You should have received a copy of the GNU General Public License
 'along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-Public Class ConsoleWriter
-    Inherits BaseWriter
-
-    Public Overrides Sub Write(ByVal type As LogType, ByVal formatStr As String, ByVal ParamArray arg() As Object)
-        If LogLevel > type Then Return
-
-        Console.Write(formatStr, arg)
-    End Sub
+Imports System.Data
 
 
-    Public Overrides Sub WriteLine(ByVal type As LogType, ByVal formatStr As String, ByVal ParamArray arg() As Object)
-        If LogLevel > type Then Return
+Public Class AccountObject
+    Public ID As Integer = 0
+    Public Name As String = ""
+    Public Password As String = ""
 
-        Console.WriteLine("[" & Format(TimeOfDay, "HH:mm:ss") & "] " & formatStr, arg)
+    Public Access As GlobalConstants.AccessLevel
+
+    Public Sub New()
     End Sub
 
 

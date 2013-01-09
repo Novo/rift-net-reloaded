@@ -1,7 +1,5 @@
-﻿'ErrorLog.vb
-'
-'Rift .NET Reloaded -- An OpenSource Server Emulator for World of Warcraft Classic Alpha 0.5.3 (3368) written in VB.Net
-'Copyright (c) 2012 noVo aka. takeoYasha
+﻿'Rift .NET Reloaded -- An OpenSource Server Emulator for World of Warcraft Classic Alpha 0.5.3 (3368) written in VB.Net
+'Copyright (c) 2013 noVo aka. takeoYasha www.easy-emu.de
 
 'This program is free software: you can redistribute it and/or modify
 'it under the terms of the GNU General Public License as published by
@@ -32,25 +30,27 @@ Public Class BaseWriter
 
     Public LogLevel As LogType = LogType.NETWORK
 
+
     Public Sub New()
-        '
     End Sub
+
 
     Public Overridable Sub Dispose() Implements System.IDisposable.Dispose
-        '
     End Sub
+
 
     Public Overridable Sub Write(ByVal type As LogType, ByVal format As String, ByVal ParamArray arg() As Object)
-        '
     End Sub
 
+
     Public Overridable Sub WriteLine(ByVal type As LogType, ByVal format As String, ByVal ParamArray arg() As Object)
-        '
     End Sub
+
 
     Public Overridable Function ReadLine() As String
         Return Console.ReadLine()
     End Function
+
 
     Public Sub PrintDiagnosticTest()
         WriteLine(LogType.NETWORK, "{0}:************************* TEST *************************", 1)
@@ -62,6 +62,7 @@ Public Class BaseWriter
         WriteLine(LogType.FAILED, "{0}:************************* TEST *************************", 1)
         WriteLine(LogType.CRITICAL, "{0}:************************* TEST *************************", 1)
     End Sub
+
 
     Public Shared Sub CreateLog(ByVal LogType As String, ByVal LogConfig As String, ByRef Log As BaseWriter)
         Try
@@ -77,6 +78,7 @@ Public Class BaseWriter
             Console.WriteLine("[{0}] Error creating log output!{1}", Format(TimeOfDay, "HH:mm:ss"), Environment.NewLine & ex.ToString)
         End Try
     End Sub
+
 
 
 End Class

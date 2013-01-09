@@ -1,7 +1,5 @@
-﻿'Main.vb
-'
-'Rift .NET Reloaded -- An OpenSource Server Emulator for World of Warcraft Classic Alpha 0.5.3 (3368) written in VB.Net
-'Copyright (c) 2012 noVo aka. takeoYasha
+﻿'Rift .NET Reloaded -- An OpenSource Server Emulator for World of Warcraft Classic Alpha 0.5.3 (3368) written in VB.Net
+'Copyright (c) 2013 noVo aka. takeoYasha www.easy-emu.de
 
 'This program is free software: you can redistribute it and/or modify
 'it under the terms of the GNU General Public License as published by
@@ -20,6 +18,7 @@ Imports System.IO
 Imports System.Reflection
 Imports System.Xml.Serialization
 Imports System.Data
+
 
 Public Module Main
 
@@ -46,6 +45,7 @@ Public Module Main
         Console.WriteLine(" [done]")
         Console.WriteLine()
 
+
         'ToDo: ConsoleCtrlHandler
 
 
@@ -70,6 +70,10 @@ Public Module Main
         IntializeWorldPacketHandlers()
 
 
+        'Intialize Singleton Manager
+        Globals.InitializeManager()
+
+
         'Start Realm Server
         RS = New RealmServerClass
         RS.start()
@@ -90,15 +94,12 @@ Public Module Main
         Console.WriteLine("Used Memory: {0}", Format(GC.GetTotalMemory(True), "### ### ##0 bytes"))
         Console.WriteLine("")
 
-        'Log.PrintDiagnosticTest()
-
         'Add Console Input Commands
         AddConsoleCommand()
     End Sub
 
 
 #Region "Global.ConsoleCommands"
-
     Public Sub AddConsoleCommand()
         Dim tmp As String = "", CommandList() As String, cmds() As String
         Dim cmd() As String = {}
@@ -142,7 +143,7 @@ Public Module Main
 
                                                     If Not alreadyexist Then
                                                         success = RealmDB.Execute("INSERT INTO accounts (username, password) VALUES (" & _
-                                                                       "'{0}', '{1}')", cmds(2).ToUpper, Crypt.getMd5Hash(cmds(3)))
+                                                         "'{0}', '{1}')", cmds(2).ToUpper, Crypt.getMd5Hash(cmds(3)))
                                                         RealmDB.DisposeDatabaseConnection()
 
                                                         If success Then
@@ -169,7 +170,7 @@ Public Module Main
                                                 Dim SQLconnect As New SQLite.SQLiteConnection()
                                                 Dim SQLcommand As SQLite.SQLiteCommand
 
-                                                SQLconnect.ConnectionString = "Data Source=database\realmDB.s3db; Version=3"
+                                                SQLconnect.ConnectionString = "Data Source=database/realmDB.s3db; Version=3"
                                                 SQLconnect.Open()
 
                                                 SQLcommand = SQLconnect.CreateCommand
@@ -248,19 +249,15 @@ Public Module Main
 
         End While
     End Sub
-
 #End Region
 
 
 #Region "Global.Database"
-
     Public Sub InitializeDatabases()
-
-
         'Create Character Database
         Try
 
-            If Not File.Exists("database\characterDB.s3db") Then
+            If Not File.Exists("database/characterDB.s3db") Then
                 Console.Write("[{0}] Character Database does not exist, creating", Format(TimeOfDay, "HH:mm:ss"))
             Else
                 Console.Write("[{0}] Character Database found, checking tables", Format(TimeOfDay, "HH:mm:ss"))
@@ -270,15 +267,30 @@ Public Module Main
             Dim SQLconnect_characterDB As New SQLite.SQLiteConnection()
             Dim SQLcommand_characterDB As SQLite.SQLiteCommand
 
-            SQLconnect_characterDB.ConnectionString = "Data Source=database\characterDB.s3db; Version=3"
+            SQLconnect_characterDB.ConnectionString = "Data Source=database/characterDB.s3db; Version=3"
             SQLconnect_characterDB.Open()
-
-            Console.Write(".")
 
             SQLcommand_characterDB = SQLconnect_characterDB.CreateCommand
 
+
             SQLcommand_characterDB.CommandText = "CREATE TABLE IF NOT EXISTS characters " & _
-            "(guid INTEGER DEFAULT 1 NOT NULL PRIMARY KEY AUTOINCREMENT, account_id INTEGER NOT NULL, name VARCHAR(32) NOT NULL, race INTEGER NOT NULL, class INTEGER NOT NULL, gender INTEGER NOT NULL, skin INTEGER NOT NULL, face INTEGER NOT NULL, hairstyle INTEGER NOT NULL, haircolor INTEGER NOT NULL, facialhair INTEGER NOT NULL, level INTEGER NOT NULL DEFAULT 1, zoneID INTEGER NOT NULL DEFAULT 0, mapID INTEGER NOT NULL DEFAULT 0, x REAL NOT NULL DEFAULT 0, y REAL NOT NULL DEFAULT 0, z REAL NOT NULL DEFAULT 0, facing REAL NOT NULL DEFAULT 0, guildId INTEGER NOT NULL DEFAULT 0, petdisplayId INTEGER NOT NULL DEFAULT 0, petlevel INTEGER NOT NULL DEFAULT 0, petfamily INTEGER NOT NULL DEFAULT 0);"
+                "(guid INTEGER DEFAULT 1 NOT NULL PRIMARY KEY AUTOINCREMENT, account_id INTEGER NOT NULL, name VARCHAR(32) NOT NULL, race INTEGER NOT NULL, class INTEGER NOT NULL, gender INTEGER NOT NULL, skin INTEGER NOT NULL, face INTEGER NOT NULL, hairstyle INTEGER NOT NULL, haircolor INTEGER NOT NULL, facialhair INTEGER NOT NULL, level INTEGER NOT NULL DEFAULT 1, zoneID INTEGER NOT NULL DEFAULT 0, mapID INTEGER NOT NULL DEFAULT 0, x REAL NOT NULL DEFAULT 0, y REAL NOT NULL DEFAULT 0, z REAL NOT NULL DEFAULT 0, orientation REAL NOT NULL DEFAULT 0, guildId INTEGER NOT NULL DEFAULT 0, petdisplayId INTEGER NOT NULL DEFAULT 0, petlevel INTEGER NOT NULL DEFAULT 0, petfamily INTEGER NOT NULL DEFAULT 0);"
+            SQLcommand_characterDB.ExecuteNonQuery()
+
+            Console.Write(".")
+
+            SQLcommand_characterDB.CommandText = "CREATE TABLE IF NOT EXISTS [character_creation_data] ( " & _
+                "[race] tinyint(4) NOT NULL, [class] tinyint(4) NOT NULL, [mapID] smallint(6) NOT NULL, [zoneID] smallint(6) NOT NULL, [x] float NOT NULL, [y] float NOT NULL, [z] float NOT NULL, [o] float NOT NULL, PRIMARY KEY ([race],[class]))"
+            SQLcommand_characterDB.ExecuteNonQuery()
+
+
+            ' -- ----------------------------
+            ' -- Records of character_creation_data
+            ' -- ----------------------------
+
+            Console.Write(".")
+
+            SQLcommand_characterDB.CommandText = "CREATE TABLE IF NOT EXISTS realmlist (realm_id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, realm_name VARCHAR(32) NOT NULL, gm_only BOOLEAN NOT NULL DEFAULT FALSE);"
             SQLcommand_characterDB.ExecuteNonQuery()
 
             Console.Write(".")
@@ -286,18 +298,17 @@ Public Module Main
             SQLcommand_characterDB.Dispose()
             SQLconnect_characterDB.Close()
 
-            Console.WriteLine(". [done]")
+            Console.WriteLine(" [done]")
 
         Catch ex As Exception
             Console.WriteLine("[{0}] Create Character Database failed!{1}", Format(TimeOfDay, "HH:mm:ss"), Environment.NewLine & ex.ToString)
         End Try
 
 
-
         'Create Realm Database
         Try
 
-            If Not File.Exists("database\realmDB.s3db") Then
+            If Not File.Exists("database/realmDB.s3db") Then
                 Console.Write("[{0}] Realm Database does not exist, creating", Format(TimeOfDay, "HH:mm:ss"))
             Else
                 Console.Write("[{0}] Realm Database found, checking tables", Format(TimeOfDay, "HH:mm:ss"))
@@ -308,7 +319,7 @@ Public Module Main
             Dim SQLcommand_realmDB As SQLite.SQLiteCommand
 
 
-            SQLconnect_realmDB.ConnectionString = "Data Source=database\realmDB.s3db; Version=3"
+            SQLconnect_realmDB.ConnectionString = "Data Source=database/realmDB.s3db; Version=3"
             SQLconnect_realmDB.Open()
 
             SQLcommand_realmDB = SQLconnect_realmDB.CreateCommand
@@ -333,8 +344,6 @@ Public Module Main
         End Try
 
     End Sub
-
-
 #End Region
 
 
@@ -363,55 +372,53 @@ Public Module Main
     End Class
 
     Public Sub LoadConfigFile()
-        'Try
-        Dim XMLFilePath As String = "config\WorldServer.xml"
+        Try
+            Dim XMLFilePath As String = "config/WorldServer.xml"
 
-        'Get filename from console arguments
-        Dim args As String() = Environment.GetCommandLineArgs()
-        For Each arg As String In args
-            If arg.IndexOf("config") <> -1 Then
-                XMLFilePath = Trim(arg.Substring(arg.IndexOf("=") + 1))
+            'Get filename from console arguments
+            Dim args As String() = Environment.GetCommandLineArgs()
+            For Each arg As String In args
+                If arg.IndexOf("config") <> -1 Then
+                    XMLFilePath = Trim(arg.Substring(arg.IndexOf("=") + 1))
+                End If
+            Next
+
+            'Make sure a config file exists
+            If System.IO.File.Exists(XMLFilePath) = False Then
+                Console.ForegroundColor = ConsoleColor.Red
+                Console.WriteLine("[{0}] Error: {1} does not exist.", Format(TimeOfDay, "HH:mm:ss"), XMLFilePath)
+                Console.WriteLine("Please copy the xml files into the same directory as the Server exe files.")
+                Console.WriteLine("Press any key to exit server: ")
+                Console.ReadKey()
+                End
             End If
-        Next
 
-        'Make sure a config file exists
-        'If System.IO.File.Exists(XMLFilePath) = False Then
-        '    Console.ForegroundColor = ConsoleColor.Red
-        '    Console.WriteLine("[{0}] Error: {1} does not exist.", Format(TimeOfDay, "HH:mm:ss"), XMLFilePath)
-        '    Console.WriteLine("Please copy the xml files into the same directory as the Server exe files.")
-        '    Console.WriteLine("Press any key to exit server: ")
-        '    Console.ReadKey()
-        '    End
-        'End If
+            'Load config
+            Console.Write("[{0}] Loading Configuration from {1}", Format(TimeOfDay, "HH:mm:ss"), XMLFilePath)
 
-        'Load config
-        Console.Write("[{0}] Loading Configuration from {1}", Format(TimeOfDay, "HH:mm:ss"), XMLFilePath)
+            Config = New XMLConfigFile
+            Console.Write(".")
 
-        Config = New XMLConfigFile
-        Console.Write(".")
+            Dim oXS As XmlSerializer = New XmlSerializer(GetType(XMLConfigFile)) ' module muss public sein
 
-        Dim oXS As XmlSerializer = New XmlSerializer(GetType(XMLConfigFile)) ' module muss public sein
+            Console.Write(".")
+            Dim oStmR As StreamReader
+            oStmR = New StreamReader(XMLFilePath)
 
-        Console.Write(".")
-        Dim oStmR As StreamReader
-        oStmR = New StreamReader(XMLFilePath)
+            Config = DirectCast(oXS.Deserialize(oStmR), XMLConfigFile)
+            oStmR.Close()
 
-        Config = DirectCast(oXS.Deserialize(oStmR), XMLConfigFile)
-        oStmR.Close()
-
-        Console.WriteLine(". [done]")
+            Console.WriteLine(". [done]")
 
 
-        'Catch ex As Exception
-        'Console.WriteLine("[{0}] LoadConfigFile failed!{1}", Format(TimeOfDay, "HH:mm:ss"), Environment.NewLine & ex.ToString)
-        'End Try
+        Catch ex As Exception
+            Console.WriteLine("[{0}] LoadConfigFile failed!{1}", Format(TimeOfDay, "HH:mm:ss"), Environment.NewLine & ex.ToString)
+        End Try
     End Sub
-
 #End Region
 
 
 #Region "Global.ErrorHandler"
-
     Private Sub InitializeExceptionHandler()
         Console.Write("[{0}] Initialize Unhandled Exception Handler", Format(TimeOfDay, "HH:mm:ss"))
         Dim currentDomain As AppDomain = AppDomain.CurrentDomain
@@ -427,8 +434,8 @@ Public Module Main
         Console.WriteLine(Environment.NewLine & "Unhandled Exception Error: " & Environment.NewLine & ex.StackTrace)
         Console.ReadKey()
     End Sub
-
 #End Region
+
 
 
 End Module

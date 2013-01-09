@@ -14,21 +14,35 @@
 'You should have received a copy of the GNU General Public License
 'along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-Public Class ConsoleWriter
-    Inherits BaseWriter
+Imports System.Collections
+Imports System.Reflection
 
-    Public Overrides Sub Write(ByVal type As LogType, ByVal formatStr As String, ByVal ParamArray arg() As Object)
-        If LogLevel > type Then Return
 
-        Console.Write(formatStr, arg)
+Public NotInheritable Class Singleton
+
+    Private Sub New()
     End Sub
 
 
-    Public Overrides Sub WriteLine(ByVal type As LogType, ByVal formatStr As String, ByVal ParamArray arg() As Object)
-        If LogLevel > type Then Return
+    Shared ObjectList As New Hashtable()
+    Shared Sync As New [Object]()
 
-        Console.WriteLine("[" & Format(TimeOfDay, "HH:mm:ss") & "] " & formatStr, arg)
-    End Sub
+    Public Shared Function GetInstance(Of T As Class)() As T
+        Dim typeName = GetType(T).FullName
+
+        SyncLock Sync
+            If ObjectList.ContainsKey(typeName) Then
+                Return DirectCast(ObjectList(typeName), T)
+            End If
+        End SyncLock
+
+        Dim constructorInfo As ConstructorInfo = GetType(T).GetConstructor(BindingFlags.NonPublic Or BindingFlags.Instance, Nothing, Type.EmptyTypes, Nothing)
+        Dim instance As T = DirectCast(constructorInfo.Invoke(New Object() {}), T)
+
+        ObjectList.Add(instance.ToString(), instance)
+
+        Return DirectCast(ObjectList(typeName), T)
+    End Function
 
 
 
